@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Personnalisation de la barre de défilement */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #2a2b25;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4a4b40;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5a5b50;
+}
+
+/* Style global */
+body {
+  @apply bg-slate-900 text-gray-100;
+}
+
+/* Classes personnalisées */
+.btn-primary {
+  @apply bg-gradient-to-r from-emerald-600 to-emerald-500 
+         hover:from-emerald-700 hover:to-emerald-600
+         text-cream font-medium
+         px-6 py-3 rounded-xl
+         transition-all duration-300
+         shadow-lg hover:shadow-xl
+         flex items-center justify-center gap-2.5
+         hover:scale-[1.02] active:scale-[0.98];
+}
+
+.btn-secondary {
+  @apply bg-slate-800 hover:bg-slate-700
+         text-gray-300 border-gray-600
+         border
+         px-4 py-2.5 rounded-xl
+         transition-all duration-300
+         shadow-sm hover:shadow-md
+         flex items-center justify-center gap-2
+         hover:scale-[1.02] active:scale-[0.98];
+}
+
+.btn-icon {
+  @apply p-2 rounded-lg
+         text-gray-400 hover:text-gray-300
+         hover:bg-slate-700
+         transition-colors duration-200;
+}
+
+.input-field {
+  @apply bg-slate-800 border-gray-600
+         focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20
+         rounded-xl px-4 py-3
+         transition-all duration-300
+         text-gray-300;
+}
+
+.dropzone {
+  @apply border-2 border-dashed border-gray-600 
+         rounded-2xl p-12
+         bg-slate-800/50 backdrop-blur-sm
+         hover:bg-slate-700/50 transition-colors
+         hover:border-emerald-500;
+}
+
+.dropzone-active {
+  @apply border-emerald-500 bg-emerald-500/10;
+}
+
+select.input-field {
+  @apply appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%221.5%22%20stroke%3D%22currentColor%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M8.25%2015L12%2018.75%2015.75%2015m-7.5-6L12%205.25%2015.75%209%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.5em_1.5em] bg-[right_0.5em_center] bg-no-repeat pr-10;
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Download, Loader2, X, FileImage, Info, Copy, Palette, ZoomIn, SplitSquareVertical, Play } from 'lucide-react';
-import { ImageFile, ImageMetadata } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { Download, Loader2, X, FileImage, Info, Copy, Palette, ZoomIn, SplitSquareVertical, Play, Settings2, Check } from 'lucide-react';
+import { ImageFile, ImageMetadata, Model } from '../types';
 import { ImageModal } from './ImageModal';
 
 interface ImagePreviewProps {
@@ -9,14 +9,26 @@ interface ImagePreviewProps {
   onBackgroundColorChange?: (id: string, color: string) => void;
   onProcess: (file: ImageFile) => Promise<void>;
   selectedModel: string;
+  models: Model[];
+  onModelChange: (fileId: string, model: string) => void;
 }
 
-export function ImagePreview({ file, onRemove, onBackgroundColorChange, onProcess, selectedModel }: ImagePreviewProps) {
+export function ImagePreview({ 
+  file, 
+  onRemove, 
+  onBackgroundColorChange, 
+  onProcess, 
+  selectedModel, 
+  models,
+  onModelChange 
+}: ImagePreviewProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [showInfo, setShowInfo] = useState(false);
   const [metadata, setMetadata] = useState<ImageMetadata | null>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showModelSelector, setShowModelSelector] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
+  const modelSelectorRef = useRef<HTMLDivElement>(null);
 
   const predefinedColors = [
     { name: 'Transparent', value: 'transparent', icon: '🔍' },
@@ -39,6 +51,17 @@ export function ImagePreview({ file, onRemove, onBackgroundColorChange, onProces
       onBackgroundColorChange?.(file.id, 'transparent');
     }
   }, [file.preview, file.status, file.backgroundColor, file.id, onBackgroundColorChange]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modelSelectorRef.current && !modelSelectorRef.current.contains(event.target as Node)) {
+        setShowModelSelector(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 B';
@@ -107,24 +130,85 @@ export function ImagePreview({ file, onRemove, onBackgroundColorChange, onProces
   };
 
   const { name, extension } = formatFileName(file.file.name);
+  const currentModel = models.find(m => m.id === file.model);
 
   return (
     <>
       <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl border border-gray-700 w-full">
-        {/* En-tête */}
         <div className="p-4 border-b border-gray-700">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="bg-emerald-500/10 p-2 rounded-lg">
-                <FileImage className="w-5 h-5 text-emerald-500" />
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0">
+                  <div className="bg-emerald-500/10 p-2 rounded-lg">
+                    <FileImage className="w-5 h-5 text-emerald-500" />
+                  </div>
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col gap-1.5">
+                    {metadata && (
+                      <p className="text-xs text-gray-400">
+                        {metadata.width} × {metadata.height}px
+                      </p>
+                    )}
+                    
+                    <div className="relative" ref={modelSelectorRef}>
+                      <button
+                        onClick={() => setShowModelSelector(!showModelSelector)}
+                        className="text-xs bg-slate-800/80 hover:bg-slate-700/80 text-gray-300 py-1.5 px-2.5 rounded-lg transition-colors flex items-center gap-2 group max-w-full"
+                      >
+                        <span className="text-emerald-500 truncate">{currentModel?.name.split(' ')[0]}</span>
+                        <span className="text-gray-400 truncate flex-1">{currentModel?.name.split(' - ')[1]}</span>
+                        <Settings2 className="w-3 h-3 text-gray-400 group-hover:text-emerald-500 transition-colors flex-shrink-0" />
+                      </button>
+
+                      {showModelSelector && (
+                        <div className="absolute top-full left-0 mt-2 w-64 bg-slate-800 rounded-xl shadow-xl border border-gray-700 z-10 overflow-hidden">
+                          <div className="p-3 border-b border-gray-700">
+                            <h4 className="text-sm font-medium text-gray-300">Sélectionner un modèle</h4>
+                          </div>
+                          <div className="max-h-[280px] overflow-y-auto">
+                            {models.map(model => (
+                              <button
+                                key={model.id}
+                                onClick={() => {
+                                  onModelChange(file.id, model.id);
+                                  setShowModelSelector(false);
+                                }}
+                                className={`w-full text-left p-3 transition-all flex items-start gap-3 group relative ${
+                                  model.id === file.model
+                                    ? 'bg-emerald-500/10'
+                                    : 'hover:bg-slate-700/50'
+                                }`}
+                              >
+                                <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                  model.id === file.model
+                                    ? 'bg-emerald-500 text-white'
+                                    : 'bg-slate-700 group-hover:bg-slate-600'
+                                }`}>
+                                  {model.id === file.model && <Check className="w-3 h-3" />}
+                                </div>
+                                <div>
+                                  <div className="text-sm font-medium text-gray-200">
+                                    {model.name.split(' - ')[0]}
+                                  </div>
+                                  <div className="text-xs text-gray-400 mt-0.5">
+                                    {model.name.split(' - ')[1]}
+                                  </div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
-              {metadata && (
-                <p className="text-xs text-gray-400">
-                  {metadata.width} × {metadata.height}px
-                </p>
-              )}
             </div>
-            <div className="flex items-center gap-2">
+
+            <div className="flex items-center gap-2 flex-shrink-0">
               {file.status === 'completed' && (
                 <button
                   type="button"
@@ -178,12 +262,17 @@ export function ImagePreview({ file, onRemove, onBackgroundColorChange, onProces
                     {file.status === 'error' && 'Erreur'}
                   </span>
                 </p>
+                {currentModel && (
+                  <p className="text-xs">
+                    <span className="text-gray-400">Modèle : </span>
+                    <span className="text-gray-300">{currentModel.name.split(' - ')[1]}</span>
+                  </p>
+                )}
               </div>
             </div>
           )}
         </div>
 
-        {/* Contenu principal */}
         <div className="p-6">
           <div 
             className="w-full h-[300px] bg-slate-800/50 rounded-xl overflow-hidden shadow-md cursor-pointer relative group"

@@ -11,6 +11,7 @@ export interface ImageFile {
     dimensions?: { width: number; height: number };
     type: string;
   };
+  model?: string;
 }
 
 export interface Model {

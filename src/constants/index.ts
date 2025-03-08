@@ -1,15 +1,15 @@
 export const models = [
   { 
+    id: 'isnet-general-use',
+    name: '✨ ISNet - Haute qualité, détails précis'
+  },
+  { 
     id: 'silueta',
-    name: '🎯 Silueta - Spécialisé silhouettes humaines (Recommandé)'
+    name: '🎯 Silueta - Spécialisé silhouettes humaines'
   },
   { 
     id: 'u2net',
     name: '🌟 U2Net - Modèle général, bon équilibre'
-  },
-  { 
-    id: 'isnet-general-use',
-    name: '✨ ISNet - Haute qualité, détails précis'
   },
   { 
     id: 'u2netp',

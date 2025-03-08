@@ -14,7 +14,7 @@ import type { ImageFile } from './types';
 
 function App() {
   const [selectedFiles, setSelectedFiles] = useState<ImageFile[]>([]);
-  const [selectedModel, setSelectedModel] = useState('silueta');
+  const [selectedModel, setSelectedModel] = useState('isnet-general-use');
   const [isDragging, setIsDragging] = useState(false);
   const [totalProcessed, setTotalProcessed] = useState(0);
   const [processingBatch, setProcessingBatch] = useState(false);
@@ -38,9 +38,10 @@ function App() {
       id: crypto.randomUUID(),
       status: 'pending' as const,
       preview: URL.createObjectURL(file),
-      backgroundColor: 'transparent'
+      backgroundColor: 'transparent',
+      model: selectedModel
     }));
-    setSelectedFiles(prev => [...prev, ...newFiles]);
+    setSelectedFiles(prev => [...newFiles, ...prev]);
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -63,18 +64,42 @@ function App() {
   };
 
   const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedModel(e.target.value);
+    const newModel = e.target.value;
+    setSelectedModel(newModel);
+    
+    // Only update pending files with the new model
+    setSelectedFiles(prev => prev.map(file => ({
+      ...file,
+      model: file.status === 'pending' ? newModel : file.model
+    })));
+  };
+
+  const handleImageModelChange = (fileId: string, newModel: string) => {
+    setSelectedFiles(prev => prev.map(file => {
+      if (file.id === fileId) {
+        return {
+          ...file,
+          model: newModel,
+          status: 'pending',
+          result: undefined,
+          error: undefined
+        };
+      }
+      return file;
+    }));
   };
 
   const processImage = async (file: ImageFile) => {
+    const modelToUse = file.model || selectedModel;
+    
     setSelectedFiles(prev => 
-      prev.map(f => f.id === file.id ? {...f, status: 'processing'} : f)
+      prev.map(f => f.id === file.id ? {...f, status: 'processing', model: modelToUse} : f)
     );
 
     try {
-      const result = await removeBackground(file.file, selectedModel);
+      const result = await removeBackground(file.file, modelToUse);
       setSelectedFiles(prev => 
-        prev.map(f => f.id === file.id ? {...f, status: 'completed', result} : f)
+        prev.map(f => f.id === file.id ? {...f, status: 'completed', result, model: modelToUse} : f)
       );
       setTotalProcessed(prev => prev + 1);
     } catch (err) {
@@ -82,7 +107,8 @@ function App() {
         prev.map(f => f.id === file.id ? {
           ...f, 
           status: 'error', 
-          error: err instanceof Error ? err.message : 'Une erreur est survenue'
+          error: err instanceof Error ? err.message : 'Une erreur est survenue',
+          model: modelToUse
         } : f)
       );
     }
@@ -101,7 +127,6 @@ function App() {
     for (const [index, file] of pendingFiles.entries()) {
       await processImage(file);
 
-      // Calculer le temps estimé restant
       if (startTime && index > 0) {
         const elapsed = Date.now() - startTime;
         const averageTimePerFile = elapsed / (index + 1);
@@ -204,6 +229,8 @@ function App() {
                   onBackgroundColorChange={handleBackgroundColorChange}
                   onProcess={processImage}
                   selectedModel={selectedModel}
+                  models={models}
+                  onModelChange={handleImageModelChange}
                 />
               ))}
               {emptyFrames.map((_, index) => (

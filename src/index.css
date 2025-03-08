@@ -88,3 +88,12 @@ select.input-field {
 .animate-float {
   animation: float 3s ease-in-out infinite;
 }
+
+@keyframes shine {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}

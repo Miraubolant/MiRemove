@@ -110,7 +110,7 @@ export function ImagePreview({ file, onRemove, onBackgroundColorChange, onProces
 
   return (
     <>
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl border border-gray-700">
+      <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl border border-gray-700 w-full">
         {/* En-tête */}
         <div className="p-4 border-b border-gray-700">
           <div className="flex items-center justify-between">
@@ -186,7 +186,7 @@ export function ImagePreview({ file, onRemove, onBackgroundColorChange, onProces
         {/* Contenu principal */}
         <div className="p-6">
           <div 
-            className="aspect-square bg-slate-800/50 rounded-xl overflow-hidden shadow-md cursor-pointer relative group"
+            className="w-full h-[300px] bg-slate-800/50 rounded-xl overflow-hidden shadow-md cursor-pointer relative group"
             onClick={() => setPreviewImage(file.status === 'completed' ? (showOriginal ? file.preview : file.result!) : file.preview)}
             style={{ backgroundColor: !showOriginal ? (file.backgroundColor || 'transparent') : undefined }}
           >

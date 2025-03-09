@@ -12,6 +12,14 @@ export interface ImageFile {
     type: string;
   };
   model?: string;
+  dimensions?: {
+    width: number;
+    height: number;
+    original: {
+      width: number;
+      height: number;
+    };
+  };
 }
 
 export interface Model {

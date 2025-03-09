@@ -11,7 +11,7 @@ export function ImageModal({ imageUrl, onClose }: ImageModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
-  const [scale, setScale] = useState(0.5);
+  const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
@@ -34,47 +34,48 @@ export function ImageModal({ imageUrl, onClose }: ImageModalProps) {
   }, [portalContainer]);
 
   useEffect(() => {
+    const updateModalSize = () => {
+      if (!imageSize.width || !imageSize.height) return;
+
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const padding = 32; // 16px padding on each side
+      const maxModalWidth = viewportWidth - (padding * 2);
+      const maxModalHeight = viewportHeight - (padding * 2);
+      const toolbarHeight = 116; // Header + toolbar + footer
+
+      // Calculate available space for the image
+      const availableWidth = maxModalWidth;
+      const availableHeight = maxModalHeight - toolbarHeight;
+
+      // Calculate scale to fit the image within available space
+      const scaleX = availableWidth / imageSize.width;
+      const scaleY = availableHeight / imageSize.height;
+      const initialScale = Math.min(scaleX, scaleY, 1);
+
+      // Calculate final modal dimensions
+      let finalWidth = Math.min(imageSize.width * initialScale, maxModalWidth);
+      let finalHeight = (imageSize.height * initialScale) + toolbarHeight;
+
+      // Ensure minimum dimensions
+      finalWidth = Math.max(finalWidth, 320);
+      finalHeight = Math.max(finalHeight, 240);
+
+      setModalSize({ width: finalWidth, height: finalHeight });
+      setScale(initialScale);
+    };
+
+    updateModalSize();
+
+    // Update modal size when window is resized
+    window.addEventListener('resize', updateModalSize);
+    return () => window.removeEventListener('resize', updateModalSize);
+  }, [imageSize]);
+
+  useEffect(() => {
     const img = new Image();
     img.onload = () => {
       setImageSize({ width: img.width, height: img.height });
-      
-      // Calculate modal size based on image dimensions and viewport
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-      const padding = 64; // 32px padding on each side
-      const maxModalWidth = viewportWidth - padding;
-      const maxModalHeight = viewportHeight - padding;
-      
-      // Calculate aspect ratio
-      const imageAspectRatio = img.width / img.height;
-      
-      let modalWidth = img.width;
-      let modalHeight = img.height;
-
-      // If image is larger than viewport, scale it down proportionally
-      if (modalWidth > maxModalWidth || modalHeight > maxModalHeight) {
-        if (maxModalWidth / maxModalHeight < imageAspectRatio) {
-          modalWidth = maxModalWidth;
-          modalHeight = modalWidth / imageAspectRatio;
-        } else {
-          modalHeight = maxModalHeight;
-          modalWidth = modalHeight * imageAspectRatio;
-        }
-      }
-
-      // Add fixed heights for header, toolbar, and footer
-      const extraHeight = 116; // 32px header + 40px toolbar + 28px footer + 16px borders
-      modalHeight += extraHeight;
-
-      setModalSize({ width: modalWidth, height: modalHeight });
-      
-      // Adjust initial scale to fit the image in the container
-      const containerWidth = modalWidth;
-      const containerHeight = modalHeight - extraHeight;
-      const scaleX = containerWidth / img.width;
-      const scaleY = containerHeight / img.height;
-      const initialScale = Math.min(scaleX, scaleY, 1);
-      setScale(initialScale);
     };
     img.src = imageUrl;
   }, [imageUrl]);
@@ -142,7 +143,7 @@ export function ImageModal({ imageUrl, onClose }: ImageModalProps) {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
       const delta = -e.deltaY * 0.01;
-      const newScale = Math.min(Math.max(0.1, scale + delta), 3);
+      const newScale = Math.min(Math.max(0.1, scale + delta), 5);
       setScale(newScale);
     } else {
       const newPosition = constrainPosition({
@@ -208,14 +209,14 @@ export function ImageModal({ imageUrl, onClose }: ImageModalProps) {
   const modalContent = (
     <div
       ref={modalRef}
-      className="fixed inset-0 backdrop-blur-sm z-[9999] flex items-center justify-center p-8"
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-8"
       onClick={handleBackgroundClick}
     >
       <div 
-        className="bg-slate-900/95 backdrop-blur-sm rounded-lg shadow-2xl border border-gray-800/50 flex flex-col"
+        className="bg-slate-900/95 backdrop-blur-sm rounded-lg shadow-2xl border border-gray-800/50 flex flex-col max-w-[95vw] max-h-[95vh]"
         style={{
-          width: modalSize.width ? `${modalSize.width}px` : 'auto',
-          height: modalSize.height ? `${modalSize.height}px` : 'auto'
+          width: modalSize.width || 'auto',
+          height: modalSize.height || 'auto'
         }}
       >
         {/* Header */}
@@ -225,7 +226,7 @@ export function ImageModal({ imageUrl, onClose }: ImageModalProps) {
               <img src={imageUrl} className="w-4 h-4 object-cover rounded" alt="thumbnail" />
             </div>
             <span className="text-sm text-gray-300">
-              Aperçu • {imageSize.width} × {imageSize.height}px
+              {imageSize.width} × {imageSize.height}px
             </span>
           </div>
           <button
@@ -237,7 +238,7 @@ export function ImageModal({ imageUrl, onClose }: ImageModalProps) {
         </div>
 
         {/* Toolbar */}
-        <div className="bg-slate-800/60 backdrop-blur-sm border-b border-gray-700/50 px-4 py-2 flex items-center gap-2">
+        <div className="bg-slate-800/60 backdrop-blur-sm border-b border-gray-700/50 px-4 py-2 flex items-center gap-2 sticky top-0 z-10">
           <button
             onClick={() => setScale(s => Math.max(0.1, s - 0.1))}
             className="btn-icon"
@@ -253,7 +254,7 @@ export function ImageModal({ imageUrl, onClose }: ImageModalProps) {
             {Math.round(scale * 100)}%
           </button>
           <button
-            onClick={() => setScale(s => Math.min(3, s + 0.1))}
+            onClick={() => setScale(s => Math.min(5, s + 0.1))}
             className="btn-icon"
             title="Zoom avant"
           >
@@ -286,7 +287,7 @@ export function ImageModal({ imageUrl, onClose }: ImageModalProps) {
         {/* Image Container */}
         <div
           ref={containerRef}
-          className="relative bg-slate-950/80 backdrop-blur-sm overflow-hidden flex-1"
+          className="relative bg-white overflow-auto flex-1"
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -313,7 +314,7 @@ export function ImageModal({ imageUrl, onClose }: ImageModalProps) {
 
         {/* Instructions */}
         <div className="bg-slate-800/80 backdrop-blur-sm px-4 py-2 text-xs text-gray-400 border-t border-gray-700/50 rounded-b-lg">
-          <p>⌘ + Molette pour zoomer • Cliquer-glisser pour déplacer • Échap pour fermer</p>
+          <p>Échap pour fermer</p>
         </div>
       </div>
     </div>

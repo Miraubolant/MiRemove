@@ -11,6 +11,7 @@ import { ProgressBar } from './components/ProgressBar';
 import { models } from './constants';
 import { removeBackground } from './services/api';
 import type { ImageFile } from './types';
+import JSZip from 'jszip';
 
 function App() {
   const [selectedFiles, setSelectedFiles] = useState<ImageFile[]>([]);
@@ -18,8 +19,8 @@ function App() {
   const [isDragging, setIsDragging] = useState(false);
   const [totalProcessed, setTotalProcessed] = useState(0);
   const [processingBatch, setProcessingBatch] = useState(false);
-  const [startTime, setStartTime] = useState<number | null>(null);
-  const [estimatedTime, setEstimatedTime] = useState<number | null>(null);
+  const [outputDimensions, setOutputDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [hasWhiteBackground, setHasWhiteBackground] = useState(false);
 
   useEffect(() => {
     document.body.classList.add('dark');
@@ -38,7 +39,7 @@ function App() {
       id: crypto.randomUUID(),
       status: 'pending' as const,
       preview: URL.createObjectURL(file),
-      backgroundColor: 'transparent',
+      backgroundColor: hasWhiteBackground ? '#FFFFFF' : 'transparent',
       model: selectedModel
     }));
     setSelectedFiles(prev => [...newFiles, ...prev]);
@@ -67,7 +68,6 @@ function App() {
     const newModel = e.target.value;
     setSelectedModel(newModel);
     
-    // Only update pending files with the new model
     setSelectedFiles(prev => prev.map(file => ({
       ...file,
       model: file.status === 'pending' ? newModel : file.model
@@ -97,7 +97,7 @@ function App() {
     );
 
     try {
-      const result = await removeBackground(file.file, modelToUse);
+      const result = await removeBackground(file.file, modelToUse, outputDimensions);
       setSelectedFiles(prev => 
         prev.map(f => f.id === file.id ? {...f, status: 'completed', result, model: modelToUse} : f)
       );
@@ -111,6 +111,7 @@ function App() {
           model: modelToUse
         } : f)
       );
+      // Don't increment totalProcessed on error
     }
   };
 
@@ -122,23 +123,71 @@ function App() {
 
     setProcessingBatch(true);
     setTotalProcessed(0);
-    setStartTime(Date.now());
     
-    for (const [index, file] of pendingFiles.entries()) {
+    for (const file of pendingFiles) {
       await processImage(file);
-
-      if (startTime && index > 0) {
-        const elapsed = Date.now() - startTime;
-        const averageTimePerFile = elapsed / (index + 1);
-        const remainingFiles = pendingFiles.length - (index + 1);
-        const estimated = Math.round(averageTimePerFile * remainingFiles / 1000);
-        setEstimatedTime(estimated);
-      }
     }
 
     setProcessingBatch(false);
-    setStartTime(null);
-    setEstimatedTime(null);
+  };
+
+  const downloadAllAsJpg = async () => {
+    const completedFiles = selectedFiles.filter(f => f.status === 'completed');
+    if (completedFiles.length === 0) return;
+
+    const zip = new JSZip();
+
+    for (const file of completedFiles) {
+      if (!file.result) continue;
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) continue;
+
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = file.result!;
+      });
+
+      const width = outputDimensions?.width || img.width;
+      const height = outputDimensions?.height || img.height;
+
+      canvas.width = width;
+      canvas.height = height;
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.9);
+      });
+
+      const fileName = `${file.file.name.split('.')[0]}.jpg`;
+      zip.file(fileName, blob);
+    }
+
+    const content = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(content);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'images.zip';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const toggleWhiteBackground = () => {
+    setHasWhiteBackground(!hasWhiteBackground);
+    setSelectedFiles(prev => prev.map(file => ({
+      ...file,
+      backgroundColor: !hasWhiteBackground ? '#FFFFFF' : 'transparent'
+    })));
   };
 
   const removeFile = (id: string) => {
@@ -159,87 +208,71 @@ function App() {
   };
 
   const hasPendingFiles = selectedFiles.some(f => f.status === 'pending');
+  const hasCompletedFiles = selectedFiles.some(f => f.status === 'completed');
   const pendingFiles = selectedFiles.filter(f => f.status === 'pending');
   const emptyFramesCount = Math.max(12, selectedFiles.length + 1);
   const emptyFrames = Array(emptyFramesCount - selectedFiles.length).fill(null);
-
-  const formatTime = (seconds: number): string => {
-    if (seconds < 60) return `${seconds} secondes`;
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes} minute${minutes > 1 ? 's' : ''} ${remainingSeconds} seconde${remainingSeconds > 1 ? 's' : ''}`;
-  };
 
   return (
     <div className="min-h-screen bg-slate-900">
       <Header />
 
       <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-200 mb-4">
-            Supprimez l'arrière-plan de vos images
-          </h1>
-          <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-            Utilisez l'intelligence artificielle pour supprimer automatiquement l'arrière-plan de vos images en quelques secondes
-          </p>
-        </div>
-
         <HelpSection />
 
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden mt-8">
-          <div className="p-8 border-b border-gray-700">
-            <ModelSelector
-              selectedModel={selectedModel}
-              onModelChange={handleModelChange}
-              onSubmit={handleSubmit}
-              models={models}
-              hasPendingFiles={hasPendingFiles}
-            />
-            {processingBatch && (
-              <div className="mt-4">
-                <ProgressBar
-                  total={pendingFiles.length}
-                  completed={totalProcessed}
-                />
-                <div className="flex items-center justify-between mt-2 text-sm text-gray-400">
-                  <p>{totalProcessed} sur {pendingFiles.length} images traitées</p>
-                  {estimatedTime !== null && (
-                    <p>Temps restant estimé : {formatTime(estimatedTime)}</p>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
+        <div className="sticky top-[80px] z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 bg-slate-900/80 backdrop-blur-sm border-b border-gray-800 shadow-lg">
+          <ModelSelector
+            selectedModel={selectedModel}
+            onModelChange={handleModelChange}
+            onSubmit={handleSubmit}
+            models={models}
+            hasPendingFiles={hasPendingFiles}
+            hasCompletedFiles={hasCompletedFiles}
+            onDownloadAllJpg={downloadAllAsJpg}
+            onDimensionsChange={setOutputDimensions}
+            onApplyWhiteBackground={toggleWhiteBackground}
+            hasWhiteBackground={hasWhiteBackground}
+          />
+        </div>
 
-          <div className="p-8">
-            <ImageUploader
-              isDragging={isDragging}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onFileChange={handleFileChange}
-            />
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
-              {selectedFiles.map(file => (
-                <ImagePreview
-                  key={file.id}
-                  file={file}
-                  onRemove={removeFile}
-                  onBackgroundColorChange={handleBackgroundColorChange}
-                  onProcess={processImage}
-                  selectedModel={selectedModel}
-                  models={models}
-                  onModelChange={handleImageModelChange}
-                />
-              ))}
-              {emptyFrames.map((_, index) => (
-                <EmptyFrame
-                  key={`empty-${index}`}
-                  onFileChange={handleFileChange}
-                />
-              ))}
+        <div className="mt-8">
+          {processingBatch && (
+            <div className="mb-8">
+              <ProgressBar
+                total={pendingFiles.length}
+                completed={totalProcessed}
+              />
             </div>
+          )}
+
+          <ImageUploader
+            isDragging={isDragging}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onFileChange={handleFileChange}
+          />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
+            {selectedFiles.map(file => (
+              <ImagePreview
+                key={file.id}
+                file={file}
+                onRemove={removeFile}
+                onBackgroundColorChange={handleBackgroundColorChange}
+                onProcess={processImage}
+                selectedModel={selectedModel}
+                models={models}
+                onModelChange={handleImageModelChange}
+                outputDimensions={outputDimensions}
+              />
+            ))}
+            {emptyFrames.map((_, index) => (
+              <EmptyFrame
+                key={`empty-${index}`}
+                onFileChange={handleFileChange}
+              />
+            ))}
           </div>
         </div>
       </main>

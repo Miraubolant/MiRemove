@@ -1,11 +1,16 @@
 const cache = new Map<string, string>();
 
-function generateCacheKey(file: File, model: string): string {
-  return `${file.name}-${file.size}-${file.lastModified}-${model}`;
+function generateCacheKey(file: File, model: string, dimensions?: { width: number; height: number }): string {
+  const dimensionKey = dimensions ? `-${dimensions.width}x${dimensions.height}` : '';
+  return `${file.name}-${file.size}-${file.lastModified}-${model}${dimensionKey}`;
 }
 
-export async function removeBackground(file: File, model: string): Promise<string> {
-  const cacheKey = generateCacheKey(file, model);
+export async function removeBackground(
+  file: File, 
+  model: string,
+  dimensions?: { width: number; height: number }
+): Promise<string> {
+  const cacheKey = generateCacheKey(file, model, dimensions);
   
   // Check cache
   const cachedResult = cache.get(cacheKey);
@@ -13,8 +18,40 @@ export async function removeBackground(file: File, model: string): Promise<strin
     return cachedResult;
   }
 
+  // Create a canvas to resize the image if dimensions are provided
+  let imageToProcess = file;
+  if (dimensions) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      canvas.width = dimensions.width;
+      canvas.height = dimensions.height;
+      
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = URL.createObjectURL(file);
+      });
+      
+      // Draw the resized image
+      ctx.drawImage(img, 0, 0, dimensions.width, dimensions.height);
+      
+      // Convert canvas to blob
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((b) => resolve(b!), file.type);
+      });
+      
+      // Create a new File object with the resized image
+      imageToProcess = new File([blob], file.name, { type: file.type });
+      
+      // Clean up
+      URL.revokeObjectURL(img.src);
+    }
+  }
+
   const formData = new FormData();
-  formData.append("image", file);
+  formData.append("image", imageToProcess);
   formData.append("model", model);
 
   const response = await fetch('https://api.miraubolant.com/remove-background', {
@@ -27,6 +64,43 @@ export async function removeBackground(file: File, model: string): Promise<strin
   }
 
   const blob = await response.blob();
+  
+  // If dimensions were provided, resize the result image
+  if (dimensions) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      canvas.width = dimensions.width;
+      canvas.height = dimensions.height;
+      
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = URL.createObjectURL(blob);
+      });
+      
+      // Draw the resized image
+      ctx.drawImage(img, 0, 0, dimensions.width, dimensions.height);
+      
+      // Convert canvas to blob
+      const resizedBlob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((b) => resolve(b!), 'image/png');
+      });
+      
+      // Create URL for the resized image
+      const resultUrl = URL.createObjectURL(resizedBlob);
+      
+      // Store in cache
+      cache.set(cacheKey, resultUrl);
+      
+      // Clean up
+      URL.revokeObjectURL(img.src);
+      
+      return resultUrl;
+    }
+  }
+
   const resultUrl = URL.createObjectURL(blob);
   
   // Store in cache

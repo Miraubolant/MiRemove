@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Loader2, X, Info, ZoomIn, SplitSquareVertical, Play, Settings2, Check, Maximize2, Lock, Unlock, RotateCcw } from 'lucide-react';
+import { Loader2, X, Info, ZoomIn, SplitSquareVertical, Play, Settings2, Check, Maximize2 } from 'lucide-react';
 import { ImageFile, ImageMetadata, Model } from '../types';
 import { ImageModal } from './ImageModal';
 
@@ -28,12 +28,8 @@ export function ImagePreview({
   const [showInfo, setShowInfo] = useState(false);
   const [metadata, setMetadata] = useState<ImageMetadata | null>(null);
   const [showModelSelector, setShowModelSelector] = useState(false);
-  const [showDimensionsEditor, setShowDimensionsEditor] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
-  const [aspectRatioLocked, setAspectRatioLocked] = useState(true);
-  const [tempDimensions, setTempDimensions] = useState<{ width: number; height: number } | null>(null);
   const modelSelectorRef = useRef<HTMLDivElement>(null);
-  const dimensionsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const img = document.createElement('img');
@@ -54,9 +50,6 @@ export function ImagePreview({
 
       if (!file.dimensions) {
         file.dimensions = dimensions;
-        setTempDimensions({ width: img.width, height: img.height });
-      } else {
-        setTempDimensions({ width: file.dimensions.width, height: file.dimensions.height });
       }
     };
     img.src = file.preview;
@@ -67,68 +60,11 @@ export function ImagePreview({
       if (modelSelectorRef.current && !modelSelectorRef.current.contains(event.target as Node)) {
         setShowModelSelector(false);
       }
-      if (dimensionsRef.current && !dimensionsRef.current.contains(event.target as Node)) {
-        setShowDimensionsEditor(false);
-        if (file.dimensions) {
-          setTempDimensions({ width: file.dimensions.width, height: file.dimensions.height });
-        }
-      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [file.dimensions]);
-
-  const handleDimensionChange = (dimension: 'width' | 'height', value: number) => {
-    if (!tempDimensions || !file.dimensions?.original) return;
-
-    const originalAspectRatio = file.dimensions.original.width / file.dimensions.original.height;
-    let newWidth = tempDimensions.width;
-    let newHeight = tempDimensions.height;
-
-    if (dimension === 'width') {
-      newWidth = Math.max(1, value);
-      if (aspectRatioLocked) {
-        newHeight = Math.round(newWidth / originalAspectRatio);
-      }
-    } else {
-      newHeight = Math.max(1, value);
-      if (aspectRatioLocked) {
-        newWidth = Math.round(newHeight * originalAspectRatio);
-      }
-    }
-
-    setTempDimensions({ width: newWidth, height: newHeight });
-  };
-
-  const applyDimensions = () => {
-    if (!tempDimensions || !file.dimensions) return;
-
-    const newDimensions = {
-      ...file.dimensions,
-      width: tempDimensions.width,
-      height: tempDimensions.height
-    };
-
-    file.dimensions = newDimensions;
-    file.status = 'pending';
-    file.result = undefined;
-    file.error = undefined;
-
-    setShowDimensionsEditor(false);
-    onProcess(file);
-  };
-
-  const resetDimensions = () => {
-    if (!file.dimensions?.original) return;
-    
-    const newDimensions = {
-      width: file.dimensions.original.width,
-      height: file.dimensions.original.height
-    };
-
-    setTempDimensions(newDimensions);
-  };
+  }, []);
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 B';
@@ -151,76 +87,9 @@ export function ImagePreview({
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex flex-col gap-1.5">
-                <div className="relative" ref={dimensionsRef}>
-                  <button
-                    onClick={() => setShowDimensionsEditor(!showDimensionsEditor)}
-                    className="text-xs bg-slate-800/80 hover:bg-slate-700/80 text-gray-300 py-1.5 px-2.5 rounded-lg transition-colors flex items-center gap-2 group"
-                  >
-                    <Maximize2 className="w-3 h-3 text-emerald-500" />
-                    <span>{dimensionsText}</span>
-                  </button>
-
-                  {showDimensionsEditor && tempDimensions && (
-                    <div className="absolute top-full left-0 mt-2 w-72 bg-slate-800 rounded-xl shadow-xl border border-gray-700 z-10">
-                      <div className="p-3 border-b border-gray-700">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-medium text-gray-300">Dimensions de l'image</h4>
-                          <button
-                            onClick={() => setAspectRatioLocked(!aspectRatioLocked)}
-                            className="p-1.5 rounded-lg hover:bg-slate-700/50 transition-colors"
-                            title={aspectRatioLocked ? "Déverrouiller les proportions" : "Verrouiller les proportions"}
-                          >
-                            {aspectRatioLocked ? (
-                              <Lock className="w-4 h-4 text-emerald-500" />
-                            ) : (
-                              <Unlock className="w-4 h-4 text-gray-400" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                      <div className="p-3 space-y-3">
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs text-gray-400 mb-1">Largeur</label>
-                            <input
-                              type="number"
-                              value={tempDimensions.width}
-                              onChange={(e) => handleDimensionChange('width', parseInt(e.target.value, 10))}
-                              className="w-full bg-slate-700/50 border border-gray-600 rounded-lg px-2 py-1.5 text-sm text-gray-200"
-                              min="1"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs text-gray-400 mb-1">Hauteur</label>
-                            <input
-                              type="number"
-                              value={tempDimensions.height}
-                              onChange={(e) => handleDimensionChange('height', parseInt(e.target.value, 10))}
-                              className="w-full bg-slate-700/50 border border-gray-600 rounded-lg px-2 py-1.5 text-sm text-gray-200"
-                              min="1"
-                            />
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={resetDimensions}
-                            className="flex-1 bg-slate-700/50 hover:bg-slate-600/50 text-gray-300 py-1.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-1.5"
-                          >
-                            <RotateCcw className="w-3 h-3" />
-                            Réinitialiser
-                          </button>
-                          <button
-                            onClick={applyDimensions}
-                            className="flex-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 py-1.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-1.5"
-                          >
-                            <Check className="w-3 h-3" />
-                            Appliquer
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                <div className="text-xs bg-slate-800/80 text-gray-300 py-1.5 px-2.5 rounded-lg flex items-center gap-2 w-fit">
+                  <Maximize2 className="w-3 h-3 text-emerald-500" />
+                  <span>{dimensionsText}</span>
                 </div>
                 
                 <div className="relative" ref={modelSelectorRef}>

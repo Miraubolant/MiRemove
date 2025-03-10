@@ -1,6 +1,8 @@
 import React from 'react';
-import { ImageIcon, Sparkles, Download, Check, PaintBucket } from 'lucide-react';
+import { ImageIcon, Sparkles, Download, PaintBucket } from 'lucide-react';
 import { Model } from '../types';
+import { ProgressBar } from './ProgressBar';
+import { useAuthStore } from '../stores/authStore';
 
 interface ModelSelectorProps {
   selectedModel: string;
@@ -12,6 +14,10 @@ interface ModelSelectorProps {
   onDownloadAllJpg?: () => void;
   onApplyWhiteBackground?: () => void;
   hasWhiteBackground?: boolean;
+  isProcessing?: boolean;
+  totalToProcess?: number;
+  completed?: number;
+  remainingProcesses?: number;
 }
 
 export function ModelSelector({ 
@@ -23,10 +29,16 @@ export function ModelSelector({
   hasCompletedFiles,
   onDownloadAllJpg,
   onApplyWhiteBackground,
-  hasWhiteBackground
+  hasWhiteBackground,
+  isProcessing,
+  totalToProcess = 0,
+  completed = 0,
+  remainingProcesses = Infinity
 }: ModelSelectorProps) {
+  const { user } = useAuthStore();
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <form className="flex flex-col sm:flex-row gap-6 items-end">
         <div className="flex-1 space-y-2">
           <label className="block">
@@ -36,6 +48,15 @@ export function ModelSelector({
             </span>
             <p className="text-sm text-gray-400 mt-1 mb-2">
               Sélectionnez le modèle le plus adapté à vos images
+              {!user && remainingProcesses < Infinity && (
+                <span className="ml-2 text-emerald-500">
+                  {remainingProcesses === 0 ? (
+                    "Connectez-vous pour traiter plus d'images"
+                  ) : (
+                    `(${remainingProcesses} traitement${remainingProcesses !== 1 ? 's' : ''} restant${remainingProcesses !== 1 ? 's' : ''})`
+                  )}
+                </span>
+              )}
             </p>
             <select
               value={selectedModel}
@@ -90,6 +111,15 @@ export function ModelSelector({
           </button>
         </div>
       </form>
+
+      {isProcessing && (
+        <div className="w-full max-w-md">
+          <ProgressBar
+            total={totalToProcess}
+            completed={completed}
+          />
+        </div>
+      )}
     </div>
   );
 }

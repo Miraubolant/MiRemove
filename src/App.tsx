@@ -7,9 +7,12 @@ import { ImagePreview } from './components/ImagePreview';
 import { EmptyFrame } from './components/EmptyFrame';
 import { Footer } from './components/Footer';
 import { ScrollToTop } from './components/ScrollToTop';
-import { ProgressBar } from './components/ProgressBar';
 import { models } from './constants';
 import { removeBackground } from './services/api';
+import { StatsProvider } from './contexts/StatsContext';
+import { LimitModal } from './components/LimitModal';
+import { AuthModal } from './components/AuthModal';
+import { useUsageStore } from './stores/usageStore';
 import type { ImageFile } from './types';
 import JSZip from 'jszip';
 
@@ -21,6 +24,10 @@ function App() {
   const [processingBatch, setProcessingBatch] = useState(false);
   const [outputDimensions, setOutputDimensions] = useState<{ width: number; height: number } | null>(null);
   const [hasWhiteBackground, setHasWhiteBackground] = useState(false);
+  const [totalToProcess, setTotalToProcess] = useState(0);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const { incrementCount, canProcess, remainingProcesses } = useUsageStore();
 
   useEffect(() => {
     document.body.classList.add('dark');
@@ -90,6 +97,11 @@ function App() {
   };
 
   const processImage = async (file: ImageFile) => {
+    if (!canProcess()) {
+      setShowLimitModal(true);
+      return;
+    }
+
     const modelToUse = file.model || selectedModel;
     
     setSelectedFiles(prev => 
@@ -102,6 +114,7 @@ function App() {
         prev.map(f => f.id === file.id ? {...f, status: 'completed', result, model: modelToUse} : f)
       );
       setTotalProcessed(prev => prev + 1);
+      incrementCount();
     } catch (err) {
       setSelectedFiles(prev => 
         prev.map(f => f.id === file.id ? {
@@ -111,7 +124,6 @@ function App() {
           model: modelToUse
         } : f)
       );
-      // Don't increment totalProcessed on error
     }
   };
 
@@ -121,14 +133,30 @@ function App() {
     const pendingFiles = selectedFiles.filter(f => f.status === 'pending');
     if (pendingFiles.length === 0) return;
 
+    const remaining = remainingProcesses();
+    const filesToProcess = pendingFiles.slice(0, remaining);
+
+    if (filesToProcess.length === 0) {
+      setShowLimitModal(true);
+      return;
+    }
+
     setProcessingBatch(true);
     setTotalProcessed(0);
+    setTotalToProcess(filesToProcess.length);
     
-    for (const file of pendingFiles) {
+    for (const file of filesToProcess) {
+      if (!canProcess()) {
+        break;
+      }
       await processImage(file);
     }
 
     setProcessingBatch(false);
+
+    if (filesToProcess.length < pendingFiles.length) {
+      setShowLimitModal(true);
+    }
   };
 
   const downloadAllAsJpg = async () => {
@@ -209,77 +237,89 @@ function App() {
 
   const hasPendingFiles = selectedFiles.some(f => f.status === 'pending');
   const hasCompletedFiles = selectedFiles.some(f => f.status === 'completed');
-  const pendingFiles = selectedFiles.filter(f => f.status === 'pending');
   const emptyFramesCount = Math.max(12, selectedFiles.length + 1);
   const emptyFrames = Array(emptyFramesCount - selectedFiles.length).fill(null);
 
   return (
-    <div className="min-h-screen bg-slate-900">
-      <Header />
+    <StatsProvider>
+      <div className="min-h-screen bg-slate-900">
+        <Header />
 
-      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <HelpSection />
+        <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <HelpSection />
 
-        <div className="sticky top-[80px] z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 bg-slate-900/80 backdrop-blur-sm border-b border-gray-800 shadow-lg">
-          <ModelSelector
-            selectedModel={selectedModel}
-            onModelChange={handleModelChange}
-            onSubmit={handleSubmit}
-            models={models}
-            hasPendingFiles={hasPendingFiles}
-            hasCompletedFiles={hasCompletedFiles}
-            onDownloadAllJpg={downloadAllAsJpg}
-            onDimensionsChange={setOutputDimensions}
-            onApplyWhiteBackground={toggleWhiteBackground}
-            hasWhiteBackground={hasWhiteBackground}
-          />
-        </div>
-
-        <div className="mt-8">
-          {processingBatch && (
-            <div className="mb-8">
-              <ProgressBar
-                total={pendingFiles.length}
-                completed={totalProcessed}
-              />
-            </div>
-          )}
-
-          <ImageUploader
-            isDragging={isDragging}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onFileChange={handleFileChange}
-          />
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
-            {selectedFiles.map(file => (
-              <ImagePreview
-                key={file.id}
-                file={file}
-                onRemove={removeFile}
-                onBackgroundColorChange={handleBackgroundColorChange}
-                onProcess={processImage}
-                selectedModel={selectedModel}
-                models={models}
-                onModelChange={handleImageModelChange}
-                outputDimensions={outputDimensions}
-              />
-            ))}
-            {emptyFrames.map((_, index) => (
-              <EmptyFrame
-                key={`empty-${index}`}
-                onFileChange={handleFileChange}
-              />
-            ))}
+          <div className="sticky top-[80px] z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 bg-slate-900/80 backdrop-blur-sm border-b border-gray-800 shadow-lg">
+            <ModelSelector
+              selectedModel={selectedModel}
+              onModelChange={handleModelChange}
+              onSubmit={handleSubmit}
+              models={models}
+              hasPendingFiles={hasPendingFiles}
+              hasCompletedFiles={hasCompletedFiles}
+              onDownloadAllJpg={downloadAllAsJpg}
+              onDimensionsChange={setOutputDimensions}
+              onApplyWhiteBackground={toggleWhiteBackground}
+              hasWhiteBackground={hasWhiteBackground}
+              isProcessing={processingBatch}
+              totalToProcess={totalToProcess}
+              completed={totalProcessed}
+              remainingProcesses={remainingProcesses()}
+            />
           </div>
-        </div>
-      </main>
 
-      <Footer />
-      <ScrollToTop />
-    </div>
+          <div className="mt-8">
+            <ImageUploader
+              isDragging={isDragging}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onFileChange={handleFileChange}
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
+              {selectedFiles.map(file => (
+                <ImagePreview
+                  key={file.id}
+                  file={file}
+                  onRemove={removeFile}
+                  onBackgroundColorChange={handleBackgroundColorChange}
+                  onProcess={processImage}
+                  selectedModel={selectedModel}
+                  models={models}
+                  onModelChange={handleImageModelChange}
+                  outputDimensions={outputDimensions}
+                />
+              ))}
+              {emptyFrames.map((_, index) => (
+                <EmptyFrame
+                  key={`empty-${index}`}
+                  onFileChange={handleFileChange}
+                />
+              ))}
+            </div>
+          </div>
+        </main>
+
+        <Footer />
+        <ScrollToTop />
+
+        {showLimitModal && (
+          <LimitModal
+            onClose={() => setShowLimitModal(false)}
+            onLogin={() => {
+              setShowLimitModal(false);
+              setShowAuthModal(true);
+            }}
+          />
+        )}
+
+        {showAuthModal && (
+          <AuthModal
+            onClose={() => setShowAuthModal(false)}
+          />
+        )}
+      </div>
+    </StatsProvider>
   );
 }
 

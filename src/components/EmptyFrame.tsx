@@ -17,7 +17,7 @@ export function EmptyFrame({ onFileChange }: EmptyFrameProps) {
 
   return (
     <div 
-      className="aspect-square bg-slate-800/30 rounded-xl cursor-pointer hover:bg-slate-700/30 transition-all duration-300 group"
+      className="aspect-square bg-slate-800/30 rounded-xl cursor-pointer hover:bg-slate-700/30 transition-all duration-300 group border-2 border-transparent hover:border-emerald-500"
       onClick={handleClick}
     >
       <div className="h-full flex items-center justify-center">

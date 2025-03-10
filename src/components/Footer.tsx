@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wand2, Github, Coffee, Heart, Shield } from 'lucide-react';
+import { Wand2, Coffee, Heart, Shield } from 'lucide-react';
 
 export function Footer() {
   return (
@@ -44,15 +44,6 @@ export function Footer() {
               Liens
             </h3>
             <div className="flex flex-wrap gap-3">
-              <a
-                href="https://github.com/Miraubolant"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-secondary py-2"
-              >
-                <Github className="w-4 h-4" />
-                <span>GitHub</span>
-              </a>
               <a
                 href="https://buymeacoffee.com/victorim"
                 target="_blank"

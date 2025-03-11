@@ -225,14 +225,6 @@ export function StatsModal({ onClose, stats }: StatsModalProps) {
               </div>
             </div>
           )}
-
-          {!user && (
-            <div className="mt-6 p-4 bg-slate-800/30 rounded-xl border border-gray-700/30">
-              <p className="text-sm text-gray-400">
-                Ces statistiques sont réinitialisées à chaque nouvelle session. Pour accéder à l'historique complet, veuillez vous connecter.
-              </p>
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -24,21 +24,24 @@ export function UserMenu() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-gray-300 px-3 py-2 rounded-lg transition-colors"
+        className="relative group overflow-hidden bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-800 hover:to-slate-700 text-white font-medium px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl transition-all duration-300 shadow-lg hover:shadow-slate-500/25 text-sm sm:text-base"
       >
-        <User className="w-4 h-4" />
-        <span className="text-sm">{user.email}</span>
+        <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <User className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden sm:inline max-w-[150px] truncate">{user.email}</span>
+        </div>
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-slate-800 rounded-xl shadow-xl border border-gray-700 overflow-hidden animate-in slide-in-from-bottom-4">
+        <div className="absolute right-0 mt-2 w-48 bg-slate-800 rounded-xl shadow-xl border border-gray-700 overflow-hidden animate-in slide-in-from-top-2">
           <div className="p-2">
             <button
               onClick={() => {
                 signOut();
                 setIsOpen(false);
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-slate-700 rounded-lg transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
             >
               <LogOut className="w-4 h-4" />
               Se déconnecter

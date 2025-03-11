@@ -33,7 +33,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     set({ user: null });
-    useUsageStore.getState().resetCount();
+    useUsageStore.getState().setAuthenticated(false);
   },
   setUser: (user) => {
     set({ user, loading: false });

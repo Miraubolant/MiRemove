@@ -134,13 +134,13 @@ function App() {
     if (pendingFiles.length === 0) return;
 
     const remaining = remainingProcesses();
-    const filesToProcess = pendingFiles.slice(0, remaining);
-
-    if (filesToProcess.length === 0) {
+    if (remaining === 0) {
       setShowLimitModal(true);
       return;
     }
 
+    const filesToProcess = pendingFiles.slice(0, remaining);
+    
     setProcessingBatch(true);
     setTotalProcessed(0);
     setTotalToProcess(filesToProcess.length);
@@ -245,10 +245,10 @@ function App() {
       <div className="min-h-screen bg-slate-900">
         <Header />
 
-        <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-[1600px] mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
           <HelpSection />
 
-          <div className="sticky top-[80px] z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 bg-slate-900/80 backdrop-blur-sm border-b border-gray-800 shadow-lg">
+          <div className="sticky top-[80px] z-30 -mx-2 sm:-mx-6 lg:-mx-8 px-2 sm:px-6 lg:px-8 py-4 bg-slate-900/80 backdrop-blur-sm border-b border-gray-800 shadow-lg">
             <ModelSelector
               selectedModel={selectedModel}
               onModelChange={handleModelChange}
@@ -267,7 +267,7 @@ function App() {
             />
           </div>
 
-          <div className="mt-8">
+          <div className="mt-4 sm:mt-8">
             <ImageUploader
               isDragging={isDragging}
               onDragOver={handleDragOver}
@@ -276,7 +276,7 @@ function App() {
               onFileChange={handleFileChange}
             />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6 mt-4 sm:mt-8">
               {selectedFiles.map(file => (
                 <ImagePreview
                   key={file.id}

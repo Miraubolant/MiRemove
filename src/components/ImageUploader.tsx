@@ -33,47 +33,25 @@ export function ImageUploader({ isDragging, onDragOver, onDragLeave, onDrop, onF
 
   return (
     <div 
-      className={`dropzone group ${isDragging ? 'dropzone-active' : ''}`}
+      className="dropzone group"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       <div className="flex flex-col items-center">
-        {/* Bouton principal avec effets avancés */}
         <div 
           className="relative cursor-pointer transform hover:scale-110 transition-all duration-500 group"
           onClick={handleClick}
         >
-          {/* Cercles d'effet de lumière */}
-          <div className="absolute inset-0 scale-[2] opacity-50">
-            <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-2xl group-hover:blur-3xl transition-all duration-500"></div>
-            <div className="absolute inset-0 bg-emerald-600/20 rounded-full blur-3xl group-hover:scale-110 transition-all duration-500"></div>
-            <div className="absolute inset-0 bg-emerald-700/20 rounded-full blur-2xl group-hover:scale-125 transition-all duration-500"></div>
-          </div>
-
-          {/* Conteneur du bouton avec dégradé */}
+          {/* Button background with gradient */}
           <div className="relative bg-gradient-to-br from-emerald-500 to-emerald-600 p-4 sm:p-6 rounded-full shadow-lg mb-4 sm:mb-6 group-hover:shadow-emerald-500/25 transition-all duration-500">
-            {/* Effet de brillance */}
+            {/* Shine effect */}
             <div className="absolute inset-0 rounded-full overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"></div>
             </div>
             
-            {/* Particules animées */}
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-              {[...Array(3)].map((_, i) => (
-                <div
-                  key={i}
-                  className={`absolute w-1 h-1 bg-white/30 rounded-full animate-particle-${i + 1}`}
-                  style={{
-                    left: '50%',
-                    top: '50%'
-                  }}
-                />
-              ))}
-            </div>
-            
-            {/* Icône sans rotation */}
-            <Upload className="w-8 h-8 sm:w-12 sm:h-12 text-white transform transition-transform duration-500 group-hover:scale-110" />
+            {/* Icon */}
+            <Upload className="w-8 h-8 sm:w-12 sm:h-12 text-white transform -rotate-45 group-hover:rotate-0 transition-transform duration-500" />
           </div>
         </div>
         
@@ -86,15 +64,14 @@ export function ImageUploader({ isDragging, onDragOver, onDragLeave, onDrop, onF
           <span className="text-xs sm:text-sm">JPG, PNG, WEBP</span>
         </div>
         
-        {/* Bouton secondaire avec effets */}
         <button
           onClick={handleClick}
           className="relative group overflow-hidden bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-medium px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-emerald-500/25 flex items-center justify-center gap-2 sm:gap-2.5 hover:scale-105 active:scale-[0.98] w-full sm:w-auto"
         >
-          {/* Effet de brillance */}
+          {/* Shine effect */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"></div>
           
-          {/* Particules animées */}
+          {/* Animated particles */}
           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
             {[...Array(3)].map((_, i) => (
               <div

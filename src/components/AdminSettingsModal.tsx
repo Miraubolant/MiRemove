@@ -194,36 +194,34 @@ export function AdminSettingsModal({ onClose }: AdminSettingsModalProps) {
     }
   }
 
-  const formatTimeNumeric = (seconds: number): string => {
+  const formatTime = (seconds: number): string => {
+    if (seconds < 60) return `${seconds.toFixed(1)}s`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}m ${remainingSeconds.toFixed(1)}s`;
+  };
+
+  const formatLongTime = (seconds: number): string => {
+    if (seconds < 60) return `${seconds.toFixed(1)} secondes`;
+    if (seconds < 3600) {
+      const minutes = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${minutes} minute${minutes > 1 ? 's' : ''} ${secs > 0 ? `${Math.round(secs)} seconde${secs > 1 ? 's' : ''}` : ''}`;
+    }
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-    
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${remainingSeconds}s`;
-    }
-    if (minutes > 0) {
-      return `${minutes}m ${remainingSeconds}s`;
-    }
-    return `${remainingSeconds}s`;
+    return `${hours} heure${hours > 1 ? 's' : ''} ${minutes > 0 ? `${minutes} minute${minutes > 1 ? 's' : ''}` : ''}`;
   };
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-200">
-      <div className="relative bg-slate-900/95 backdrop-blur-sm rounded-xl shadow-2xl border border-gray-800/50 w-full max-w-5xl animate-in slide-in-from-bottom-4 duration-300 max-h-[90vh] overflow-y-auto mx-auto my-auto">
-        {/* Effet de gradient sur le fond */}
-        <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 via-transparent to-transparent rounded-xl pointer-events-none"></div>
-
-        {/* En-tête */}
-        <div className="sticky top-0 bg-slate-900/95 backdrop-blur-sm z-10 px-6 py-4 border-b border-gray-800 flex items-center justify-between">
+      <div className="bg-slate-900/95 backdrop-blur-sm rounded-xl shadow-2xl border border-gray-800/50 w-full max-w-5xl animate-in slide-in-from-bottom-4 duration-300 max-h-[90vh] overflow-y-auto">
+        <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between sticky top-0 bg-slate-900/95 backdrop-blur-sm z-10">
           <div className="flex items-center gap-3">
-            <div className="relative group">
-              <div className="absolute inset-0 bg-emerald-500/20 rounded-xl blur-xl animate-pulse"></div>
-              <div className="bg-emerald-500/10 p-2 rounded-lg relative">
-                <Shield className="w-5 h-5 text-emerald-500" />
-              </div>
+            <div className="bg-emerald-500/10 p-2 rounded-lg">
+              <Shield className="w-5 h-5 text-emerald-500" />
             </div>
-            <h2 className="text-xl font-semibold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+            <h2 className="text-xl font-semibold text-gray-200">
               Statistiques globales
             </h2>
           </div>
@@ -248,7 +246,7 @@ export function AdminSettingsModal({ onClose }: AdminSettingsModalProps) {
                 <Timer className="w-4 h-4 text-emerald-500" />
                 <h3 className="text-sm font-medium text-gray-400">Temps total de traitement</h3>
               </div>
-              <p className="text-2xl font-semibold text-emerald-500">{formatTimeNumeric(totalStats.totalTime)}</p>
+              <p className="text-2xl font-semibold text-emerald-500">{formatLongTime(totalStats.totalTime)}</p>
             </div>
 
             <div className="bg-slate-800/50 rounded-xl p-4 border border-gray-700/50">
@@ -264,7 +262,7 @@ export function AdminSettingsModal({ onClose }: AdminSettingsModalProps) {
                 <Clock className="w-4 h-4 text-emerald-500" />
                 <h3 className="text-sm font-medium text-gray-400">Temps moyen par image</h3>
               </div>
-              <p className="text-2xl font-semibold text-emerald-500">{formatTimeNumeric(totalStats.avgProcessingTime)}</p>
+              <p className="text-2xl font-semibold text-emerald-500">{formatTime(totalStats.avgProcessingTime)}</p>
             </div>
           </div>
 
@@ -337,10 +335,10 @@ export function AdminSettingsModal({ onClose }: AdminSettingsModalProps) {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right text-gray-300">
-                        {formatTimeNumeric(avgTime)}
+                        {formatTime(avgTime)}
                       </td>
                       <td className="py-3 px-4 text-right text-gray-300">
-                        {formatTimeNumeric(user.total_processing_time)}
+                        {formatTime(user.total_processing_time)}
                       </td>
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">

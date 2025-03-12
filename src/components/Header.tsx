@@ -17,21 +17,8 @@ export function Header({ onShowGuide }: HeaderProps) {
   const [showAuth, setShowAuth] = useState(false);
   const [showAdminSettings, setShowAdminSettings] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isAtTop, setIsAtTop] = useState(true);
   const { stats } = useStats();
   const { user } = useAuthStore();
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      setIsAtTop(currentScrollY === 0);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // Vérifie la position initiale
-    
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   useEffect(() => {
     async function checkAdminStatus() {
@@ -54,87 +41,96 @@ export function Header({ onShowGuide }: HeaderProps) {
     checkAdminStatus();
   }, [user]);
 
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-24 bg-slate-900/95 backdrop-blur-sm border-b border-gray-800">
-      <div className="max-w-7xl mx-auto h-full">
-        <div className="flex items-center justify-between h-full px-3 sm:px-6">
-          {/* Logo et titre */}
-          <div className="flex items-center gap-3 sm:gap-4 group cursor-pointer">
-            <div className="relative transform transition-all duration-500 group-hover:scale-110">
-              {/* Cercles lumineux */}
-              <div className={`absolute inset-0 scale-150 transition-opacity duration-500 ${
-                !isAtTop ? 'opacity-0' : 'opacity-100'
-              }`}>
-                <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-2xl animate-pulse"></div>
-                <div className="absolute inset-0 bg-emerald-600/20 rounded-full blur-3xl animate-pulse delay-75"></div>
-                <div className="absolute inset-0 bg-emerald-700/20 rounded-full blur-2xl animate-pulse delay-150"></div>
-              </div>
-
-              {/* Logo container */}
-              <div className={`bg-gradient-to-br from-emerald-500 to-emerald-600 p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-lg relative transform transition-all duration-500 ${
-                !isAtTop ? '-rotate-45 scale-75' : 'rotate-0 scale-100'
-              } hover:rotate-180`}>
-                <Wand2 className="w-5 h-5 sm:w-8 sm:h-8 text-white" />
-              </div>
-            </div>
-
-            {/* Titre et sous-titre */}
-            <div>
-              {/* Titre toujours visible */}
-              <h1 className="text-xl sm:text-3xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent transform group-hover:scale-105 transition-transform duration-500">
-                MiRemover
-              </h1>
-              {/* Sous-titre avec animation de fade */}
-              <p className={`text-xs sm:text-sm text-gray-400 hidden sm:block transform transition-all duration-500 ${
-                !isAtTop ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'
-              } group-hover:translate-y-1`}>
-                Supprimez l'arrière-plan de vos images en quelques clics
-              </p>
-            </div>
-          </div>
-
-          {/* Boutons de droite */}
-          <div className="flex items-center gap-2 sm:gap-3">
+    <>
+      <header className="border-b border-gray-800 bg-slate-900/95 backdrop-blur-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between h-16 sm:h-24 px-3 sm:px-6">
+            {/* Logo et titre (aligné à gauche) */}
             <button
-              onClick={onShowGuide}
-              className="btn-header"
+              onClick={scrollToTop}
+              className="group focus:outline-none"
             >
-              <QuestionMark className="w-4 h-4 text-emerald-500" />
-              <span className="hidden sm:inline">Guide</span>
+              <div className="flex items-center gap-2 sm:gap-4">
+                <div className="relative transform group-hover:scale-110 transition-transform duration-500">
+                  <div className="absolute inset-0 bg-emerald-500/20 rounded-xl sm:rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+                  <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-2 sm:p-4 rounded-xl sm:rounded-2xl shadow-lg relative">
+                    <Wand2 className="w-5 h-5 sm:w-8 sm:h-8 text-white transform -rotate-45 group-hover:rotate-[0deg] transition-transform duration-500" />
+                  </div>
+                </div>
+                <div>
+                  <h1 className="text-xl sm:text-3xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent transform group-hover:scale-105 transition-transform duration-500">
+                    MiRemover
+                  </h1>
+                  <p className="text-xs sm:text-sm text-gray-400 transform group-hover:translate-y-1 transition-transform duration-500 hidden sm:block">
+                    Supprimez l'arrière-plan de vos images en quelques clics
+                  </p>
+                </div>
+              </div>
             </button>
 
-            <button
-              onClick={() => setShowStats(true)}
-              className="btn-header"
-            >
-              <BarChart3 className="w-4 h-4 text-emerald-500" />
-              <span className="hidden sm:inline">Statistiques</span>
-            </button>
-
-            {user && isAdmin && (
+            {/* Boutons de droite */}
+            <div className="flex items-center gap-2 sm:gap-3">
               <button
-                onClick={() => setShowAdminSettings(true)}
-                className="btn-header"
+                onClick={onShowGuide}
+                className="relative group overflow-hidden bg-gradient-to-r from-emerald-600/20 to-emerald-500/20 hover:from-emerald-600/30 hover:to-emerald-500/30 text-gray-300 font-medium px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl transition-all duration-300 text-sm sm:text-base"
               >
-                <Shield className="w-4 h-4 text-emerald-500" />
-                <span className="hidden sm:inline">Admin</span>
+                <div className="absolute inset-0 bg-white/10 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                <div className="relative flex items-center gap-1.5 sm:gap-2">
+                  <QuestionMark className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
+                  <span className="hidden sm:inline">Guide</span>
+                </div>
               </button>
-            )}
 
-            {user ? (
-              <UserMenu />
-            ) : (
               <button
-                onClick={() => setShowAuth(true)}
-                className="btn-header-primary"
+                onClick={() => setShowStats(true)}
+                className="relative group overflow-hidden bg-gradient-to-r from-emerald-600/20 to-emerald-500/20 hover:from-emerald-600/30 hover:to-emerald-500/30 text-gray-300 font-medium px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl transition-all duration-300 text-sm sm:text-base"
               >
-                <LogIn className="w-4 h-4" />
-                <span className="hidden sm:inline">Connexion</span>
+                <div className="absolute inset-0 bg-white/10 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                <div className="relative flex items-center gap-1.5 sm:gap-2">
+                  <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
+                  <span className="hidden sm:inline">Statistiques</span>
+                </div>
               </button>
-            )}
+
+              {user && isAdmin && (
+                <button
+                  onClick={() => setShowAdminSettings(true)}
+                  className="relative group overflow-hidden bg-gradient-to-r from-emerald-600/20 to-emerald-500/20 hover:from-emerald-600/30 hover:to-emerald-500/30 text-gray-300 font-medium px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl transition-all duration-300 text-sm sm:text-base"
+                >
+                  <div className="absolute inset-0 bg-white/10 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                  <div className="relative flex items-center gap-1.5 sm:gap-2">
+                    <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
+                    <span className="hidden sm:inline">Admin</span>
+                  </div>
+                </button>
+              )}
+
+              {user ? (
+                <UserMenu />
+              ) : (
+                <button
+                  onClick={() => setShowAuth(true)}
+                  className="relative group overflow-hidden bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-medium px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl transition-all duration-300 shadow-lg hover:shadow-emerald-500/25 text-sm sm:text-base"
+                >
+                  <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                  <div className="relative flex items-center gap-1.5 sm:gap-2">
+                    <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Connexion</span>
+                  </div>
+                </button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {showStats && (
         <StatsModal
@@ -154,6 +150,6 @@ export function Header({ onShowGuide }: HeaderProps) {
           onClose={() => setShowAdminSettings(false)}
         />
       )}
-    </header>
+    </>
   );
 }

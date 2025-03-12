@@ -10,6 +10,7 @@ import { StatsProvider } from './contexts/StatsContext';
 import { LimitModal } from './components/LimitModal';
 import { AuthModal } from './components/AuthModal';
 import { QuickGuideModal } from './components/QuickGuideModal';
+import { CookieConsent } from './components/CookieConsent';
 import { useUsageStore } from './stores/usageStore';
 import { useAuthStore } from './stores/authStore';
 import { useAdminSettingsStore } from './stores/adminSettingsStore';
@@ -56,7 +57,6 @@ function App() {
       model: selectedModel
     }));
 
-    // Charger les métadonnées des images
     const filesWithMetadata = await loadImagesMetadata(newFiles);
     setSelectedFiles(prev => [...filesWithMetadata, ...prev]);
   };
@@ -243,7 +243,7 @@ function App() {
       <div className="min-h-screen bg-slate-900">
         <Header onShowGuide={() => setShowGuideModal(true)} />
 
-        <main className="max-w-[1600px] mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <main className="max-w-[1600px] mx-auto px-2 sm:px-6 lg:px-8 pt-24 sm:pt-32 pb-4 sm:pb-8">
           <ImageUploader
             isDragging={isDragging}
             onDragOver={handleDragOver}
@@ -289,6 +289,7 @@ function App() {
 
         <Footer />
         <ScrollToTop />
+        <CookieConsent />
 
         {showLimitModal && (
           <LimitModal

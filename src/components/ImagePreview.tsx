@@ -47,6 +47,13 @@ export function ImagePreview({
     await onProcess(file);
   };
 
+  const handleImageClick = () => {
+    // N'ouvre le modal que si l'image a été traitée
+    if (file.status === 'completed') {
+      setShowModal(true);
+    }
+  };
+
   return (
     <>
       <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl border border-gray-700 w-full">
@@ -117,8 +124,8 @@ export function ImagePreview({
 
         <div className="p-6">
           <div 
-            className="w-full h-[300px] bg-slate-800/50 rounded-xl overflow-hidden shadow-md cursor-pointer relative group"
-            onClick={() => setShowModal(true)}
+            className={`w-full h-[300px] bg-slate-800/50 rounded-xl overflow-hidden shadow-md relative group ${file.status === 'completed' ? 'cursor-pointer' : 'cursor-default'}`}
+            onClick={handleImageClick}
             style={{ backgroundColor: !showOriginal && file.backgroundColor === '#FFFFFF' ? '#FFFFFF' : undefined }}
           >
             {file.status === 'completed' && (
@@ -150,7 +157,7 @@ export function ImagePreview({
                   En attente de traitement
                 </p>
                 <button
-                  onClick={(e) => handleProcess(e)}
+                  onClick={handleProcess}
                   className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-medium px-4 py-2 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2 hover:scale-105"
                 >
                   <Play className="w-4 h-4" />

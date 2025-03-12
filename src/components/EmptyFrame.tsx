@@ -23,7 +23,7 @@ export function EmptyFrame({ onFileChange }: EmptyFrameProps) {
       <div className="h-full flex items-center justify-center">
         <div className="flex flex-col items-center gap-2">
           <div className="w-10 h-10 rounded-lg bg-slate-700/50 flex items-center justify-center group-hover:bg-emerald-500/10 transition-all duration-300">
-            <Plus className="w-5 h-5 text-gray-400 group-hover:text-emerald-500 transition-colors duration-300" />
+            <Plus className="w-5 h-5 text-emerald-500 transition-colors duration-300" />
           </div>
           <span className="text-xs text-gray-500 group-hover:text-gray-400 transition-colors duration-300">
             Ajouter une image

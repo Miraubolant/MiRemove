@@ -40,43 +40,49 @@ export function ProgressBar({ total, completed, maxFreeImages }: ProgressBarProp
   };
 
   return (
-    <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-gray-700/50 overflow-hidden">
-      <div className="p-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {isComplete ? (
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-          ) : (
-            <Timer className="w-4 h-4 text-emerald-500 animate-pulse" />
-          )}
-          <span className="text-sm text-gray-300">
-            {validCompleted}/{total} image{total > 1 ? 's' : ''}
-            {!user && remaining > 0 && (
-              <span className="text-emerald-500 ml-2">
-                ({remaining} restante{remaining > 1 ? 's' : ''} sur {maxFreeImages})
-              </span>
+    <div className="flex-1">
+      <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-gray-700/50 overflow-hidden">
+        <div className="p-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {isComplete ? (
+              <div className="bg-emerald-500/10 p-1.5 rounded-lg">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              </div>
+            ) : (
+              <div className="bg-emerald-500/10 p-1.5 rounded-lg">
+                <Timer className="w-4 h-4 text-emerald-500" />
+              </div>
             )}
-          </span>
+            <span className="text-sm text-gray-300">
+              {validCompleted}/{total} image{total > 1 ? 's' : ''}
+              {!user && remaining > 0 && (
+                <span className="text-emerald-500 ml-2">
+                  ({remaining} restante{remaining > 1 ? 's' : ''} sur {maxFreeImages})
+                </span>
+              )}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <Clock className="w-4 h-4" />
+            <span>
+              {isComplete ? 'Terminé' : `Reste ~${formatTime(estimatedTimeRemaining)}`}
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-sm text-gray-400">
-          <Clock className="w-4 h-4" />
-          <span>
-            {isComplete ? 'Terminé' : `Reste ~${formatTime(estimatedTimeRemaining)}`}
-          </span>
-        </div>
-      </div>
 
-      <div className="relative">
-        <div className="h-1 bg-slate-700/50">
-          <div
-            className={`h-full transition-all duration-500 ease-out relative ${
-              isComplete
-                ? 'bg-emerald-500'
-                : 'bg-gradient-to-r from-emerald-600 to-emerald-500'
-            }`}
-            style={{ width: `${progress}%` }}
-          >
-            <div className="absolute inset-0 w-full animate-[shine_2s_ease-in-out_infinite]">
-              <div className="w-1/3 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        <div className="relative">
+          <div className="h-1 bg-slate-700/50">
+            <div
+              className={`h-full transition-all duration-500 ease-out relative ${
+                isComplete
+                  ? 'bg-emerald-500'
+                  : 'bg-gradient-to-r from-emerald-600 to-emerald-500'
+              }`}
+              style={{ width: `${progress}%` }}
+            >
+              <div className="absolute inset-0 w-full animate-[shine_2s_ease-in-out_infinite]">
+                <div className="w-1/3 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+              </div>
             </div>
           </div>
         </div>

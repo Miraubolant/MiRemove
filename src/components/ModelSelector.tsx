@@ -64,47 +64,69 @@ export function ModelSelector({
         )}
 
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onApplyWhiteBackground}
-            className={`relative group overflow-hidden h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 ${
-              hasWhiteBackground
-                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white shadow-lg hover:shadow-emerald-500/25'
-                : 'bg-slate-700 hover:bg-slate-600 text-white'
-            }`}
-            title={hasWhiteBackground ? "Retirer le fond blanc" : "Appliquer un fond blanc à toutes les images"}
-          >
-            <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-            <PaintBucket className="w-5 h-5 relative" />
-          </button>
+          {/* Bouton de fond blanc avec tooltip */}
+          <div className="relative group">
+            <button
+              type="button"
+              onClick={onApplyWhiteBackground}
+              className={`h-[46px] w-[46px] rounded-xl flex items-center justify-center transition-all duration-200 ${
+                hasWhiteBackground 
+                  ? 'bg-white text-emerald-500' 
+                  : 'bg-slate-800 hover:bg-slate-700 text-gray-400 hover:text-emerald-500'
+              }`}
+              title={hasWhiteBackground ? "Retirer le fond blanc" : "Appliquer un fond blanc"}
+            >
+              <PaintBucket className="w-5 h-5" />
+            </button>
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-slate-800 text-xs text-gray-300 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+              {hasWhiteBackground ? "Retirer le fond blanc" : "Appliquer un fond blanc"}
+            </div>
+          </div>
 
-          <button
-            type="button"
-            onClick={onDownloadAllJpg}
-            className="relative group overflow-hidden h-[46px] w-[46px] flex items-center justify-center rounded-xl bg-slate-700 hover:bg-slate-600 text-white transition-all duration-300"
-            title="Tout télécharger en JPG"
-          >
-            <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-            <Download className="w-5 h-5 relative" />
-          </button>
+          {/* Bouton de téléchargement avec animation */}
+          <div className="relative group">
+            <button
+              type="button"
+              onClick={onDownloadAllJpg}
+              disabled={!hasCompletedFiles}
+              className={`relative h-[46px] w-[46px] rounded-xl flex items-center justify-center transition-all duration-300 ${
+                hasCompletedFiles
+                  ? 'bg-emerald-500 text-white hover:scale-110 hover:shadow-lg hover:shadow-emerald-500/25'
+                  : 'bg-slate-800/50 text-gray-600 cursor-not-allowed'
+              }`}
+              title="Tout télécharger en JPG"
+            >
+              {/* Effet de pulsation */}
+              {hasCompletedFiles && (
+                <div className="absolute inset-0 bg-emerald-500 rounded-xl animate-ping opacity-20"></div>
+              )}
+              
+              {/* Effet de brillance */}
+              {hasCompletedFiles && (
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 rounded-xl overflow-hidden"></div>
+              )}
+
+              <Download className={`w-5 h-5 ${hasCompletedFiles ? 'animate-bounce' : ''}`} />
+            </button>
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-slate-800 text-xs text-gray-300 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+              {hasCompletedFiles ? "Tout télécharger en JPG" : "Aucune image à télécharger"}
+            </div>
+          </div>
 
           <button
             type="submit"
             onClick={handleSubmit}
             disabled={isProcessing || !hasPendingFiles}
-            className={`relative group overflow-hidden h-[46px] px-6 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 min-w-[200px] ${
+            className={`btn-header-primary h-[46px] px-6 min-w-[200px] ${
               !isProcessing && hasPendingFiles
-                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white shadow-lg hover:shadow-emerald-500/25 hover:scale-[1.02] active:scale-[0.98]'
-                : 'bg-slate-800/50 text-gray-500 cursor-not-allowed'
+                ? ''
+                : 'opacity-50 cursor-not-allowed'
             }`}
           >
-            <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-            <div className="relative flex items-center gap-2">
-              <ImageIcon className="w-5 h-5" />
-              <span>
-                {!user ? "Se connecter pour traiter" : "Traiter les images"}
-              </span>
-            </div>
+            <ImageIcon className="w-5 h-5" />
+            <span>
+              {!user ? "Se connecter pour traiter" : "Traiter les images"}
+            </span>
           </button>
         </div>
       </div>

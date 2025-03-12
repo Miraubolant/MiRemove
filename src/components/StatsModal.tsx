@@ -58,27 +58,44 @@ export function StatsModal({ onClose, stats }: StatsModalProps) {
     return `${minutes}m ${remainingSeconds.toFixed(1)}s`;
   };
 
+  const formatLongTime = (seconds: number): string => {
+    if (seconds < 60) return `${seconds.toFixed(1)} secondes`;
+    if (seconds < 3600) {
+      const minutes = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${minutes} minute${minutes > 1 ? 's' : ''} ${secs > 0 ? `${Math.round(secs)} seconde${secs > 1 ? 's' : ''}` : ''}`;
+    }
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours} heure${hours > 1 ? 's' : ''} ${minutes > 0 ? `${minutes} minute${minutes > 1 ? 's' : ''}` : ''}`;
+  };
+
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-200">
-      <div className="bg-slate-900/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-800/50 w-full max-w-4xl animate-in slide-in-from-bottom-4 duration-300">
-        {/* Header avec effet de gradient */}
+      <div className="relative bg-slate-900/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-800/50 w-full max-w-4xl animate-in slide-in-from-bottom-4 duration-300 mx-auto my-auto">
+        {/* Effet de gradient sur le fond */}
+        <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 via-transparent to-transparent rounded-2xl pointer-events-none"></div>
+
+        {/* En-tête */}
         <div className="relative px-6 py-4 border-b border-gray-800 flex items-center justify-between">
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-transparent"></div>
-          <div className="relative flex items-center gap-3">
-            <div className="bg-emerald-500/10 p-2 rounded-lg">
-              <BarChart3 className="w-5 h-5 text-emerald-500" />
+          <div className="flex items-center gap-3">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-emerald-500/20 rounded-xl blur-xl animate-pulse"></div>
+              <div className="bg-emerald-500/10 p-2 rounded-lg relative">
+                <BarChart3 className="w-5 h-5 text-emerald-500" />
+              </div>
             </div>
             <h2 className="text-xl font-semibold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
               Statistiques
             </h2>
           </div>
-          <button onClick={onClose} className="relative btn-icon">
+          <button onClick={onClose} className="btn-icon">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-6 space-y-8">
-          {/* Statistiques principales avec animations */}
+          {/* Statistiques principales */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
             {[
               {
@@ -133,7 +150,7 @@ export function StatsModal({ onClose, stats }: StatsModalProps) {
             ))}
           </div>
 
-          {/* Statistiques détaillées avec animations */}
+          {/* Statistiques détaillées */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="bg-slate-800/30 rounded-xl p-6 border border-gray-700/30 hover:border-emerald-500/30 transition-all duration-300 group">
               <h3 className="text-sm font-medium text-gray-300 mb-4 flex items-center gap-2">

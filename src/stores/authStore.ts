@@ -34,6 +34,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (error) throw error;
     set({ user: null });
     useUsageStore.getState().setAuthenticated(false);
+    // Rafraîchir la page après la déconnexion
+    window.location.reload();
   },
   setUser: (user) => {
     set({ user, loading: false });

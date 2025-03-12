@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Download, Copy, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { X, Download, Copy, ZoomIn, ZoomOut, RotateCcw, SplitSquareVertical } from 'lucide-react';
 
 interface ImageModalProps {
   imageUrl: string;
+  originalUrl?: string;
   onClose: () => void;
 }
 
-export function ImageModal({ imageUrl, onClose }: ImageModalProps) {
+export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -18,6 +19,7 @@ export function ImageModal({ imageUrl, onClose }: ImageModalProps) {
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   const [modalSize, setModalSize] = useState({ width: 0, height: 0 });
   const [isMouseOverImage, setIsMouseOverImage] = useState(false);
+  const [showOriginal, setShowOriginal] = useState(false);
   const [portalContainer] = useState(() => {
     const el = document.createElement('div');
     el.setAttribute('id', 'modal-root');
@@ -63,6 +65,7 @@ export function ImageModal({ imageUrl, onClose }: ImageModalProps) {
 
       setModalSize({ width: finalWidth, height: finalHeight });
       setScale(initialScale);
+      centerImage();
     };
 
     updateModalSize();
@@ -79,6 +82,17 @@ export function ImageModal({ imageUrl, onClose }: ImageModalProps) {
     };
     img.src = imageUrl;
   }, [imageUrl]);
+
+  // Reset view when switching between original and processed image
+  useEffect(() => {
+    const currentImage = showOriginal && originalUrl ? originalUrl : imageUrl;
+    const img = new Image();
+    img.onload = () => {
+      setImageSize({ width: img.width, height: img.height });
+      resetView();
+    };
+    img.src = currentImage;
+  }, [showOriginal, imageUrl, originalUrl]);
 
   const centerImage = () => {
     if (!containerRef.current || !imageRef.current) return;
@@ -206,6 +220,8 @@ export function ImageModal({ imageUrl, onClose }: ImageModalProps) {
     centerImage();
   };
 
+  const currentImage = showOriginal && originalUrl ? originalUrl : imageUrl;
+
   const modalContent = (
     <div
       ref={modalRef}
@@ -268,6 +284,18 @@ export function ImageModal({ imageUrl, onClose }: ImageModalProps) {
           >
             <RotateCcw className="w-4 h-4" />
           </button>
+          {originalUrl && (
+            <>
+              <div className="w-px h-4 bg-gray-700/50" />
+              <button
+                onClick={() => setShowOriginal(!showOriginal)}
+                className={`btn-icon ${showOriginal ? 'bg-emerald-500/10 text-emerald-500' : ''}`}
+                title={showOriginal ? "Voir le résultat" : "Voir l'original"}
+              >
+                <SplitSquareVertical className="w-4 h-4" />
+              </button>
+            </>
+          )}
           <button
             onClick={copyToClipboard}
             className="btn-icon"
@@ -300,7 +328,7 @@ export function ImageModal({ imageUrl, onClose }: ImageModalProps) {
         >
           <img
             ref={imageRef}
-            src={imageUrl}
+            src={currentImage}
             alt="Preview"
             className={`max-w-none select-none absolute ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
             style={{

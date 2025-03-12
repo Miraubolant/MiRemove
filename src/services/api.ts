@@ -1,3 +1,5 @@
+import { compressImage } from './imageCompression';
+
 const cache = new Map<string, string>();
 
 function generateCacheKey(file: File, model: string, dimensions?: { width: number; height: number }): string {
@@ -7,7 +9,7 @@ function generateCacheKey(file: File, model: string, dimensions?: { width: numbe
 
 export async function removeBackground(
   file: File, 
-  model: string,
+  model: string = 'bria',
   dimensions?: { width: number; height: number }
 ): Promise<string> {
   const startTime = performance.now();
@@ -22,40 +24,17 @@ export async function removeBackground(
       return cachedResult;
     }
 
-    // Create a canvas to resize the image if dimensions are provided
-    let imageToProcess = file;
-    if (dimensions) {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        canvas.width = dimensions.width;
-        canvas.height = dimensions.height;
-        
-        const img = new Image();
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-          img.src = URL.createObjectURL(file);
-        });
-        
-        // Draw the resized image
-        ctx.drawImage(img, 0, 0, dimensions.width, dimensions.height);
-        
-        // Convert canvas to blob
-        const blob = await new Promise<Blob>((resolve) => {
-          canvas.toBlob((b) => resolve(b!), file.type);
-        });
-        
-        // Create a new File object with the resized image
-        imageToProcess = new File([blob], file.name, { type: file.type });
-        
-        // Clean up
-        URL.revokeObjectURL(img.src);
-      }
-    }
+    // Compress the image before processing
+    const compressedFile = await compressImage(file, {
+      maxWidth: dimensions?.width || 2048,
+      maxHeight: dimensions?.height || 2048,
+      quality: 0.8,
+      maxSizeMB: 10
+    });
 
+    // Create FormData
     const formData = new FormData();
-    formData.append("image", imageToProcess);
+    formData.append("image", compressedFile);
     formData.append("model", model);
 
     const response = await fetch('https://api.miraubolant.com/remove-background', {
@@ -64,12 +43,12 @@ export async function removeBackground(
     });
 
     if (!response.ok) {
-      throw new Error('Échec de la suppression du fond');
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Échec de la suppression du fond');
     }
 
     const blob = await response.blob();
     
-    // If dimensions were provided, resize the result image
     if (dimensions) {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -84,21 +63,14 @@ export async function removeBackground(
           img.src = URL.createObjectURL(blob);
         });
         
-        // Draw the resized image
         ctx.drawImage(img, 0, 0, dimensions.width, dimensions.height);
         
-        // Convert canvas to blob
         const resizedBlob = await new Promise<Blob>((resolve) => {
           canvas.toBlob((b) => resolve(b!), 'image/png');
         });
         
-        // Create URL for the resized image
         const resultUrl = URL.createObjectURL(resizedBlob);
-        
-        // Store in cache
         cache.set(cacheKey, resultUrl);
-        
-        // Clean up
         URL.revokeObjectURL(img.src);
         
         success = true;
@@ -107,8 +79,6 @@ export async function removeBackground(
     }
 
     const resultUrl = URL.createObjectURL(blob);
-    
-    // Store in cache
     cache.set(cacheKey, resultUrl);
 
     success = true;
@@ -117,7 +87,7 @@ export async function removeBackground(
     success = false;
     throw error;
   } finally {
-    const processingTime = (performance.now() - startTime) / 1000; // Convert to seconds
+    const processingTime = (performance.now() - startTime) / 1000;
     window.dispatchEvent(new CustomEvent('imageProcessed', {
       detail: {
         success,

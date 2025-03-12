@@ -1,24 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
-import { HelpSection } from './components/HelpSection';
 import { ModelSelector } from './components/ModelSelector';
 import { ImageUploader } from './components/ImageUploader';
 import { ImagePreview } from './components/ImagePreview';
 import { EmptyFrame } from './components/EmptyFrame';
 import { Footer } from './components/Footer';
 import { ScrollToTop } from './components/ScrollToTop';
-import { models } from './constants';
-import { removeBackground } from './services/api';
 import { StatsProvider } from './contexts/StatsContext';
 import { LimitModal } from './components/LimitModal';
 import { AuthModal } from './components/AuthModal';
+import { QuickGuideModal } from './components/QuickGuideModal';
 import { useUsageStore } from './stores/usageStore';
+import { useAuthStore } from './stores/authStore';
+import { useAdminSettingsStore } from './stores/adminSettingsStore';
+import { removeBackground } from './services/api';
+import { loadImagesMetadata } from './services/imageService';
 import type { ImageFile } from './types';
 import JSZip from 'jszip';
 
 function App() {
   const [selectedFiles, setSelectedFiles] = useState<ImageFile[]>([]);
-  const [selectedModel, setSelectedModel] = useState('isnet-general-use');
+  const [selectedModel, setSelectedModel] = useState('bria');
   const [isDragging, setIsDragging] = useState(false);
   const [totalProcessed, setTotalProcessed] = useState(0);
   const [processingBatch, setProcessingBatch] = useState(false);
@@ -27,19 +29,23 @@ function App() {
   const [totalToProcess, setTotalToProcess] = useState(0);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showGuideModal, setShowGuideModal] = useState(false);
+  const [isImageLimit, setIsImageLimit] = useState(false);
   const { incrementCount, canProcess, remainingProcesses } = useUsageStore();
+  const { user } = useAuthStore();
+  const { settings } = useAdminSettingsStore();
 
   useEffect(() => {
     document.body.classList.add('dark');
   }, []);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      addFiles(Array.from(e.target.files));
+      await addFiles(Array.from(e.target.files));
     }
   };
 
-  const addFiles = (files: File[]) => {
+  const addFiles = async (files: File[]) => {
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
     const newFiles = imageFiles.map(file => ({
       file,
@@ -49,7 +55,10 @@ function App() {
       backgroundColor: hasWhiteBackground ? '#FFFFFF' : 'transparent',
       model: selectedModel
     }));
-    setSelectedFiles(prev => [...newFiles, ...prev]);
+
+    // Charger les métadonnées des images
+    const filesWithMetadata = await loadImagesMetadata(newFiles);
+    setSelectedFiles(prev => [...filesWithMetadata, ...prev]);
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -62,56 +71,36 @@ function App() {
     setIsDragging(false);
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
     
     if (e.dataTransfer.files) {
-      addFiles(Array.from(e.dataTransfer.files));
+      await addFiles(Array.from(e.dataTransfer.files));
     }
-  };
-
-  const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newModel = e.target.value;
-    setSelectedModel(newModel);
-    
-    setSelectedFiles(prev => prev.map(file => ({
-      ...file,
-      model: file.status === 'pending' ? newModel : file.model
-    })));
-  };
-
-  const handleImageModelChange = (fileId: string, newModel: string) => {
-    setSelectedFiles(prev => prev.map(file => {
-      if (file.id === fileId) {
-        return {
-          ...file,
-          model: newModel,
-          status: 'pending',
-          result: undefined,
-          error: undefined
-        };
-      }
-      return file;
-    }));
   };
 
   const processImage = async (file: ImageFile) => {
-    if (!canProcess()) {
-      setShowLimitModal(true);
+    const canProcessImage = await canProcess();
+    if (!canProcessImage) {
+      const remaining = await remainingProcesses();
+      if (remaining === 0) {
+        if (user) {
+          setIsImageLimit(true);
+        }
+        setShowLimitModal(true);
+      }
       return;
     }
 
-    const modelToUse = file.model || selectedModel;
-    
     setSelectedFiles(prev => 
-      prev.map(f => f.id === file.id ? {...f, status: 'processing', model: modelToUse} : f)
+      prev.map(f => f.id === file.id ? {...f, status: 'processing', model: selectedModel} : f)
     );
 
     try {
-      const result = await removeBackground(file.file, modelToUse, outputDimensions);
+      const result = await removeBackground(file.file, selectedModel, outputDimensions);
       setSelectedFiles(prev => 
-        prev.map(f => f.id === file.id ? {...f, status: 'completed', result, model: modelToUse} : f)
+        prev.map(f => f.id === file.id ? {...f, status: 'completed', result, model: selectedModel} : f)
       );
       setTotalProcessed(prev => prev + 1);
       incrementCount();
@@ -121,7 +110,7 @@ function App() {
           ...f, 
           status: 'error', 
           error: err instanceof Error ? err.message : 'Une erreur est survenue',
-          model: modelToUse
+          model: selectedModel
         } : f)
       );
     }
@@ -133,8 +122,11 @@ function App() {
     const pendingFiles = selectedFiles.filter(f => f.status === 'pending');
     if (pendingFiles.length === 0) return;
 
-    const remaining = remainingProcesses();
+    const remaining = await remainingProcesses();
     if (remaining === 0) {
+      if (user) {
+        setIsImageLimit(true);
+      }
       setShowLimitModal(true);
       return;
     }
@@ -146,7 +138,8 @@ function App() {
     setTotalToProcess(filesToProcess.length);
     
     for (const file of filesToProcess) {
-      if (!canProcess()) {
+      const canProcessImage = await canProcess();
+      if (!canProcessImage) {
         break;
       }
       await processImage(file);
@@ -154,7 +147,11 @@ function App() {
 
     setProcessingBatch(false);
 
-    if (filesToProcess.length < pendingFiles.length) {
+    const newRemaining = await remainingProcesses();
+    if (newRemaining === 0) {
+      if (user) {
+        setIsImageLimit(true);
+      }
       setShowLimitModal(true);
     }
   };
@@ -237,66 +234,56 @@ function App() {
 
   const hasPendingFiles = selectedFiles.some(f => f.status === 'pending');
   const hasCompletedFiles = selectedFiles.some(f => f.status === 'completed');
+  const pendingCount = selectedFiles.filter(f => f.status === 'pending').length;
   const emptyFramesCount = Math.max(12, selectedFiles.length + 1);
   const emptyFrames = Array(emptyFramesCount - selectedFiles.length).fill(null);
 
   return (
     <StatsProvider>
       <div className="min-h-screen bg-slate-900">
-        <Header />
+        <Header onShowGuide={() => setShowGuideModal(true)} />
 
         <main className="max-w-[1600px] mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
-          <HelpSection />
+          <ImageUploader
+            isDragging={isDragging}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onFileChange={handleFileChange}
+          />
 
-          <div className="sticky top-[80px] z-30 -mx-2 sm:-mx-6 lg:-mx-8 px-2 sm:px-6 lg:px-8 py-4 bg-slate-900/80 backdrop-blur-sm border-b border-gray-800 shadow-lg">
+          <div className="mt-8">
             <ModelSelector
-              selectedModel={selectedModel}
-              onModelChange={handleModelChange}
               onSubmit={handleSubmit}
-              models={models}
               hasPendingFiles={hasPendingFiles}
               hasCompletedFiles={hasCompletedFiles}
               onDownloadAllJpg={downloadAllAsJpg}
-              onDimensionsChange={setOutputDimensions}
               onApplyWhiteBackground={toggleWhiteBackground}
               hasWhiteBackground={hasWhiteBackground}
               isProcessing={processingBatch}
               totalToProcess={totalToProcess}
               completed={totalProcessed}
-              remainingProcesses={remainingProcesses()}
+              pendingCount={pendingCount}
             />
           </div>
 
-          <div className="mt-4 sm:mt-8">
-            <ImageUploader
-              isDragging={isDragging}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onFileChange={handleFileChange}
-            />
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6 mt-4 sm:mt-8">
-              {selectedFiles.map(file => (
-                <ImagePreview
-                  key={file.id}
-                  file={file}
-                  onRemove={removeFile}
-                  onBackgroundColorChange={handleBackgroundColorChange}
-                  onProcess={processImage}
-                  selectedModel={selectedModel}
-                  models={models}
-                  onModelChange={handleImageModelChange}
-                  outputDimensions={outputDimensions}
-                />
-              ))}
-              {emptyFrames.map((_, index) => (
-                <EmptyFrame
-                  key={`empty-${index}`}
-                  onFileChange={handleFileChange}
-                />
-              ))}
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6 mt-8">
+            {selectedFiles.map(file => (
+              <ImagePreview
+                key={file.id}
+                file={file}
+                onRemove={removeFile}
+                onBackgroundColorChange={handleBackgroundColorChange}
+                onProcess={processImage}
+                outputDimensions={outputDimensions}
+              />
+            ))}
+            {emptyFrames.map((_, index) => (
+              <EmptyFrame
+                key={`empty-${index}`}
+                onFileChange={handleFileChange}
+              />
+            ))}
           </div>
         </main>
 
@@ -310,12 +297,19 @@ function App() {
               setShowLimitModal(false);
               setShowAuthModal(true);
             }}
+            isImageLimit={isImageLimit}
           />
         )}
 
         {showAuthModal && (
           <AuthModal
             onClose={() => setShowAuthModal(false)}
+          />
+        )}
+
+        {showGuideModal && (
+          <QuickGuideModal
+            onClose={() => setShowGuideModal(false)}
           />
         )}
       </div>

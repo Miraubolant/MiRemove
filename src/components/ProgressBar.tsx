@@ -6,9 +6,10 @@ import { useAuthStore } from '../stores/authStore';
 interface ProgressBarProps {
   total: number;
   completed: number;
+  maxFreeImages: number;
 }
 
-export function ProgressBar({ total, completed }: ProgressBarProps) {
+export function ProgressBar({ total, completed, maxFreeImages }: ProgressBarProps) {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [startTime] = useState(Date.now());
   const { stats } = useStats();
@@ -51,7 +52,7 @@ export function ProgressBar({ total, completed }: ProgressBarProps) {
             {validCompleted}/{total} image{total > 1 ? 's' : ''}
             {!user && remaining > 0 && (
               <span className="text-emerald-500 ml-2">
-                ({remaining} restante{remaining > 1 ? 's' : ''})
+                ({remaining} restante{remaining > 1 ? 's' : ''} sur {maxFreeImages})
               </span>
             )}
           </span>

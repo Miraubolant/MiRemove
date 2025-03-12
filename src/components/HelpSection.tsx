@@ -12,17 +12,19 @@ export function HelpSection() {
       tips: [
         "Formats : JPG, PNG, WEBP",
         "Importation multiple",
-        "10MB max par image"
+        "Compression automatique",
+        "Redimensionnement intelligent"
       ]
     },
     {
       icon: Settings2,
       title: "2. Configurez",
-      description: "Ajustez les paramètres selon vos besoins",
+      description: "Choisissez votre niveau de qualité",
       tips: [
-        "5 modèles d'IA spécialisés",
-        "Dimensions personnalisables",
-        "Fond blanc optionnel"
+        "MiRemover Max - Qualité maximale",
+        "MiRemover Pro - Optimisé mode",
+        "MiRemover Plus - Polyvalent",
+        "MiRemover Light - Ultra rapide"
       ]
     },
     {
@@ -32,7 +34,8 @@ export function HelpSection() {
       tips: [
         "Traitement par lots",
         "Haute précision",
-        "Prévisualisation instantanée"
+        "Prévisualisation instantanée",
+        "Comparaison avant/après"
       ]
     },
     {
@@ -40,7 +43,8 @@ export function HelpSection() {
       title: "4. Exportez",
       description: "Téléchargez vos images sans fond",
       tips: [
-        "Export en JPG avec fond blanc",
+        "Export PNG transparent",
+        "Export JPG avec fond blanc",
         "Zoom et aperçu détaillé",
         "Téléchargement groupé"
       ]

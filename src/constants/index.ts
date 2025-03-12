@@ -1,22 +1,22 @@
 export const models = [
   { 
-    id: 'isnet-general-use',
-    name: '✨ ISNet - Haute qualité, détails précis'
+    id: 'bria',
+    name: '✨ MiRemover Max - Qualité maximale',
+    description: 'Notre meilleur modèle pour des résultats exceptionnels'
   },
   { 
-    id: 'silueta',
-    name: '🎯 Silueta - Spécialisé silhouettes humaines'
+    id: 'clothing',
+    name: '👕 MiRemover Pro - Optimisé mode',
+    description: 'Spécialement conçu pour les vêtements et accessoires'
   },
   { 
-    id: 'u2net',
-    name: '🌟 U2Net - Modèle général, bon équilibre'
+    id: 'standard',
+    name: '🎯 MiRemover Plus - Polyvalent',
+    description: 'Excellent équilibre entre qualité et vitesse'
   },
   { 
-    id: 'u2netp',
-    name: '⚡ U2NetP - Rapide et léger'
-  },
-  { 
-    id: 'u2net_human_seg',
-    name: '👤 U2Net Human - Optimisé pour les personnes'
+    id: 'fast',
+    name: '⚡ MiRemover Light - Ultra rapide',
+    description: 'Idéal pour traiter rapidement de nombreuses images'
   }
 ];

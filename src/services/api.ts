@@ -5,8 +5,8 @@ const API_BASE_URL = 'https://api.miraubolant.com';
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 seconde
 
-// Clé API pour l'authentification
-const API_KEY = '1dee46089112c4983018e8a206c2c95b33630aeb32f2cb9a7805103360f89f8b';
+// Clés API pour l'authentification
+const API_KEY = import.meta.env.VITE_API_KEY;
 const API_KEY_SECRET = import.meta.env.VITE_API_KEY_SECRET;
 
 function generateCacheKey(file: File, model: string, dimensions?: { width: number; height: number }): string {
@@ -44,12 +44,6 @@ async function fetchWithRetry(
     headers.set('X-Timestamp', timestamp);
     headers.set('X-Signature', signature);
 
-    console.log('Request headers:', {
-      'X-API-Key': API_KEY,
-      'X-Timestamp': timestamp,
-      'X-Signature': signature
-    });
-
     const response = await fetch(url, {
       ...options,
       headers
@@ -66,8 +60,9 @@ async function fetchWithRetry(
       throw error;
     }
 
-    console.error('Erreur de requête, nouvelle tentative dans', RETRY_DELAY * (MAX_RETRIES - retries + 1), 'ms');
-    await wait(RETRY_DELAY * (MAX_RETRIES - retries + 1)); // Backoff exponentiel
+    const delay = RETRY_DELAY * (MAX_RETRIES - retries + 1);
+    console.log(`Tentative échouée, nouvelle tentative dans ${delay}ms...`);
+    await wait(delay);
     return fetchWithRetry(url, options, retries - 1);
   }
 }
@@ -145,6 +140,9 @@ export async function removeBackground(
     console.error('Erreur lors du traitement de l\'image:', error);
     
     if (error instanceof Error) {
+      if (error.message.includes('Signature invalide')) {
+        throw new Error('Erreur d\'authentification. Veuillez réessayer.');
+      }
       if (error.message.includes('name resolution')) {
         throw new Error('Impossible de se connecter au serveur. Veuillez vérifier votre connexion internet et réessayer.');
       }

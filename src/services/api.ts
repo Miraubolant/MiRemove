@@ -5,9 +5,13 @@ const API_BASE_URL = 'https://api.miraubolant.com';
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 seconde
 
-// Clés API pour l'authentification
+// Vérifier que les clés API sont définies
 const API_KEY = import.meta.env.VITE_API_KEY;
 const API_KEY_SECRET = import.meta.env.VITE_API_KEY_SECRET;
+
+if (!API_KEY || !API_KEY_SECRET) {
+  console.error('Les clés API ne sont pas définies dans les variables d\'environnement');
+}
 
 function generateCacheKey(file: File, model: string, dimensions?: { width: number; height: number }): string {
   const dimensionKey = dimensions ? `-${dimensions.width}x${dimensions.height}` : '';
@@ -15,12 +19,16 @@ function generateCacheKey(file: File, model: string, dimensions?: { width: numbe
 }
 
 async function generateSignature(timestamp: string): Promise<string> {
-  // Format exact comme dans la commande curl
-  const message = `${API_KEY}:${timestamp}:${API_KEY_SECRET}`;
-  const encoder = new TextEncoder();
-  const data = encoder.encode(message);
+  if (!API_KEY || !API_KEY_SECRET) {
+    throw new Error('Les clés API ne sont pas configurées');
+  }
+
+  // Format exact comme dans le serveur Flask
+  const message = `${API_KEY}:${timestamp}`;
   
   // Utiliser l'API Web Crypto pour générer un hash SHA-256
+  const encoder = new TextEncoder();
+  const data = encoder.encode(`${message}:${API_KEY_SECRET}`);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
@@ -36,17 +44,28 @@ async function fetchWithRetry(
   retries: number = MAX_RETRIES
 ): Promise<Response> {
   try {
+    if (!API_KEY) {
+      throw new Error('La clé API n\'est pas configurée');
+    }
+
+    // Générer le timestamp en secondes (comme dans le serveur Flask)
     const timestamp = Math.floor(Date.now() / 1000).toString();
     const signature = await generateSignature(timestamp);
 
-    const headers = new Headers(options.headers);
-    headers.set('X-API-Key', API_KEY);
-    headers.set('X-Timestamp', timestamp);
-    headers.set('X-Signature', signature);
+    const headers = new Headers({
+      'X-API-Key': API_KEY,
+      'X-Timestamp': timestamp,
+      'X-Signature': signature,
+      'Origin': window.location.origin,
+      'Accept': 'image/png, application/json',
+      ...options.headers
+    });
 
     const response = await fetch(url, {
       ...options,
-      headers
+      headers,
+      mode: 'cors',
+      credentials: 'same-origin'
     });
 
     if (!response.ok) {
@@ -77,6 +96,11 @@ export async function removeBackground(
   const cacheKey = generateCacheKey(file, model, dimensions);
   
   try {
+    // Vérifier que les clés API sont configurées
+    if (!API_KEY || !API_KEY_SECRET) {
+      throw new Error('Les clés API ne sont pas configurées. Veuillez contacter l\'administrateur.');
+    }
+
     const cachedResult = cache.get(cacheKey);
     if (cachedResult) {
       success = true;
@@ -140,11 +164,17 @@ export async function removeBackground(
     console.error('Erreur lors du traitement de l\'image:', error);
     
     if (error instanceof Error) {
-      if (error.message.includes('Signature invalide')) {
+      if (error.message.includes('Les clés API ne sont pas configurées')) {
+        throw new Error('Erreur de configuration. Veuillez contacter l\'administrateur.');
+      }
+      if (error.message.includes('Authentification invalide')) {
         throw new Error('Erreur d\'authentification. Veuillez réessayer.');
       }
       if (error.message.includes('name resolution')) {
         throw new Error('Impossible de se connecter au serveur. Veuillez vérifier votre connexion internet et réessayer.');
+      }
+      if (error.message.includes('blocked by CORS policy')) {
+        throw new Error('Erreur de connexion au serveur. Veuillez réessayer plus tard.');
       }
       throw error;
     }

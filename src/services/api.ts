@@ -15,6 +15,7 @@ function generateCacheKey(file: File, model: string, dimensions?: { width: numbe
 }
 
 async function generateSignature(timestamp: string): Promise<string> {
+  // Format exact comme dans la commande curl
   const message = `${API_KEY}:${timestamp}:${API_KEY_SECRET}`;
   const encoder = new TextEncoder();
   const data = encoder.encode(message);
@@ -43,6 +44,12 @@ async function fetchWithRetry(
     headers.set('X-Timestamp', timestamp);
     headers.set('X-Signature', signature);
 
+    console.log('Request headers:', {
+      'X-API-Key': API_KEY,
+      'X-Timestamp': timestamp,
+      'X-Signature': signature
+    });
+
     const response = await fetch(url, {
       ...options,
       headers
@@ -59,6 +66,7 @@ async function fetchWithRetry(
       throw error;
     }
 
+    console.error('Erreur de requête, nouvelle tentative dans', RETRY_DELAY * (MAX_RETRIES - retries + 1), 'ms');
     await wait(RETRY_DELAY * (MAX_RETRIES - retries + 1)); // Backoff exponentiel
     return fetchWithRetry(url, options, retries - 1);
   }

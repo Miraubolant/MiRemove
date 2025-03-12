@@ -7,6 +7,7 @@ const RETRY_DELAY = 1000; // 1 seconde
 
 // Clé API pour l'authentification
 const API_KEY = '1dee46089112c4983018e8a206c2c95b33630aeb32f2cb9a7805103360f89f8b';
+const API_KEY_SECRET = import.meta.env.VITE_API_KEY_SECRET;
 
 function generateCacheKey(file: File, model: string, dimensions?: { width: number; height: number }): string {
   const dimensionKey = dimensions ? `-${dimensions.width}x${dimensions.height}` : '';
@@ -14,7 +15,7 @@ function generateCacheKey(file: File, model: string, dimensions?: { width: numbe
 }
 
 async function generateSignature(timestamp: string): Promise<string> {
-  const message = `${API_KEY}:${timestamp}`;
+  const message = `${API_KEY}:${timestamp}:${API_KEY_SECRET}`;
   const encoder = new TextEncoder();
   const data = encoder.encode(message);
   

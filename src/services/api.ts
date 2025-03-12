@@ -20,7 +20,7 @@ function generateCacheKey(file: File, model: string, dimensions?: { width: numbe
 
 async function generateSignature(timestamp: string): Promise<string> {
   if (!API_KEY || !API_KEY_SECRET) {
-    throw new Error('Les clés API ne sont pas configurées');
+    throw new Error('Les clés API ne sont pas configurées. Veuillez contacter l\'administrateur.');
   }
 
   // Format exact comme dans le serveur Flask
@@ -44,8 +44,8 @@ async function fetchWithRetry(
   retries: number = MAX_RETRIES
 ): Promise<Response> {
   try {
-    if (!API_KEY) {
-      throw new Error('La clé API n\'est pas configurée');
+    if (!API_KEY || !API_KEY_SECRET) {
+      throw new Error('Les clés API ne sont pas configurées. Veuillez contacter l\'administrateur.');
     }
 
     // Générer le timestamp en secondes (comme dans le serveur Flask)
@@ -165,7 +165,7 @@ export async function removeBackground(
     
     if (error instanceof Error) {
       if (error.message.includes('Les clés API ne sont pas configurées')) {
-        throw new Error('Erreur de configuration. Veuillez contacter l\'administrateur.');
+        throw new Error('Les clés API ne sont pas configurées. Veuillez contacter l\'administrateur.');
       }
       if (error.message.includes('Authentification invalide')) {
         throw new Error('Erreur d\'authentification. Veuillez réessayer.');

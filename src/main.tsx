@@ -2,13 +2,11 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import { initializeApiKeys } from './services/api';
 
-// Vérifier les variables d'environnement requises
-const requiredEnvVars = ['VITE_API_KEY', 'VITE_API_KEY_SECRET'];
-const missingEnvVars = requiredEnvVars.filter(key => !import.meta.env[key]);
-
-if (missingEnvVars.length > 0) {
-  console.error('Variables d\'environnement manquantes:', missingEnvVars.join(', '));
+// Initialiser les clés API au démarrage
+initializeApiKeys().catch(error => {
+  console.error('Erreur lors de l\'initialisation des clés API:', error);
   document.body.innerHTML = `
     <div style="
       display: flex;
@@ -37,10 +35,10 @@ if (missingEnvVars.length > 0) {
       </p>
     </div>
   `;
-} else {
-  createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-      <App />
-    </StrictMode>
-  );
-}
+});
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);

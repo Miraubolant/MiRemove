@@ -1,16 +1,30 @@
 import { compressImage } from './imageCompression';
+import { fetchCoolifyEnvVars } from './coolify';
 
 const cache = new Map<string, string>();
 const API_BASE_URL = 'https://api.miraubolant.com';
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 seconde
 
-// Vérifier que les clés API sont définies
-const API_KEY = import.meta.env.VITE_API_KEY;
-const API_KEY_SECRET = import.meta.env.VITE_API_KEY_SECRET;
+// Initialiser les clés API
+let API_KEY = import.meta.env.VITE_API_KEY;
+let API_KEY_SECRET = import.meta.env.VITE_API_KEY_SECRET;
 
-if (!API_KEY || !API_KEY_SECRET) {
-  console.error('Les clés API ne sont pas définies dans les variables d\'environnement');
+// Fonction pour mettre à jour les clés API
+export async function initializeApiKeys() {
+  try {
+    const envVars = await fetchCoolifyEnvVars();
+    API_KEY = envVars.VITE_API_KEY || API_KEY;
+    API_KEY_SECRET = envVars.VITE_API_KEY_SECRET || API_KEY_SECRET;
+
+    if (!API_KEY || !API_KEY_SECRET) {
+      console.error('Les clés API ne sont pas définies dans les variables d\'environnement');
+      throw new Error('Les clés API ne sont pas configurées. Veuillez contacter l\'administrateur.');
+    }
+  } catch (error) {
+    console.error('Erreur lors de l\'initialisation des clés API:', error);
+    throw error;
+  }
 }
 
 function generateCacheKey(file: File, model: string, dimensions?: { width: number; height: number }): string {
@@ -23,10 +37,7 @@ async function generateSignature(timestamp: string): Promise<string> {
     throw new Error('Les clés API ne sont pas configurées. Veuillez contacter l\'administrateur.');
   }
 
-  // Format exact comme dans le serveur Flask
   const message = `${API_KEY}:${timestamp}`;
-  
-  // Utiliser l'API Web Crypto pour générer un hash SHA-256
   const encoder = new TextEncoder();
   const data = encoder.encode(`${message}:${API_KEY_SECRET}`);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -45,10 +56,9 @@ async function fetchWithRetry(
 ): Promise<Response> {
   try {
     if (!API_KEY || !API_KEY_SECRET) {
-      throw new Error('Les clés API ne sont pas configurées. Veuillez contacter l\'administrateur.');
+      await initializeApiKeys();
     }
 
-    // Générer le timestamp en secondes (comme dans le serveur Flask)
     const timestamp = Math.floor(Date.now() / 1000).toString();
     const signature = await generateSignature(timestamp);
 
@@ -96,9 +106,8 @@ export async function removeBackground(
   const cacheKey = generateCacheKey(file, model, dimensions);
   
   try {
-    // Vérifier que les clés API sont configurées
     if (!API_KEY || !API_KEY_SECRET) {
-      throw new Error('Les clés API ne sont pas configurées. Veuillez contacter l\'administrateur.');
+      await initializeApiKeys();
     }
 
     const cachedResult = cache.get(cacheKey);

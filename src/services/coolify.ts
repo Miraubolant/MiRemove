@@ -26,21 +26,22 @@ export async function fetchCoolifyEnvVars(): Promise<Record<string, string>> {
     const data = await response.json() as CoolifyEnvVar[];
     
     // Convertir le tableau en objet
-    return data.reduce((acc, { name, value }) => {
+    const envVars = data.reduce((acc, { name, value }) => {
       acc[name] = value;
       return acc;
     }, {} as Record<string, string>);
+
+    // Mettre à jour les variables d'environnement
+    Object.entries(envVars).forEach(([key, value]) => {
+      if (key.startsWith('VITE_')) {
+        // @ts-ignore - Mise à jour dynamique des variables d'environnement
+        import.meta.env[key] = value;
+      }
+    });
+
+    return envVars;
   } catch (error) {
     console.error('Erreur lors de la récupération des variables Coolify:', error);
-    return {};
+    throw error;
   }
-}
-
-export function updateEnvVars(envVars: Record<string, string>): void {
-  Object.entries(envVars).forEach(([key, value]) => {
-    if (key.startsWith('VITE_')) {
-      // @ts-ignore - Mise à jour dynamique des variables d'environnement
-      import.meta.env[key] = value;
-    }
-  });
 }

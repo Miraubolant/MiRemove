@@ -24,11 +24,11 @@ export function UserMenu() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative group overflow-hidden bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-800 hover:to-slate-700 text-white font-medium px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl transition-all duration-300 shadow-lg hover:shadow-slate-500/25 text-sm sm:text-base"
+        className="relative group overflow-hidden bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-medium px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl transition-all duration-300 shadow-lg hover:shadow-emerald-500/25 text-sm sm:text-base"
       >
-        <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <User className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+        <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 rounded-xl animate-shimmer" />
+        <div className="relative flex items-center gap-1.5 sm:gap-2">
+          <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-bounce-scale" />
           <span className="hidden sm:inline max-w-[150px] truncate">{user.email}</span>
         </div>
       </button>

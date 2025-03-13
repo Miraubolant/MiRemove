@@ -1,127 +1,131 @@
-import React from 'react';
-import { FileText, ArrowLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { FileText, ArrowLeft, X } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 
 export function GDPR() {
-  return (
-    <div className="min-h-screen bg-slate-900">
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <Link 
-          to="/"
-          className="inline-flex items-center gap-2 text-gray-400 hover:text-emerald-500 transition-colors mb-8"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Retour à l'accueil
-        </Link>
+  const navigate = useNavigate();
 
-        <div className="bg-slate-800/50 rounded-2xl p-8 border border-gray-700/50">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="bg-emerald-500/10 p-3 rounded-xl">
-              <FileText className="w-6 h-6 text-emerald-500" />
+  useEffect(() => {
+    sessionStorage.setItem('seen-legal', 'true');
+  }, []);
+
+  const handleClose = () => {
+    navigate('/');
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="w-full max-w-4xl animate-in slide-in-from-bottom-4 duration-300">
+        <div className="bg-slate-900/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-800/50">
+          <div className="p-6 border-b border-gray-800">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-emerald-500/10 p-3 rounded-xl">
+                  <FileText className="w-6 h-6 text-emerald-500" />
+                </div>
+                <h1 className="text-2xl font-bold text-gray-200">
+                  Conformité RGPD
+                </h1>
+              </div>
+              <button
+                onClick={handleClose}
+                className="p-2 text-gray-400 hover:text-gray-300 transition-colors rounded-lg hover:bg-white/5"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <h1 className="text-2xl font-bold text-gray-200">
-              Conformité RGPD
-            </h1>
           </div>
 
-          <div className="space-y-8 text-gray-300">
-            <section>
-              <h2 className="text-xl font-semibold text-gray-200 mb-4">
-                1. Base légale du traitement
-              </h2>
-              <p className="text-gray-400 leading-relaxed">
-                Nous traitons vos données personnelles sur les bases légales suivantes :
-              </p>
-              <ul className="list-disc list-inside mt-4 space-y-2 text-gray-400">
-                <li>Votre consentement explicite</li>
-                <li>L'exécution du contrat de service</li>
-                <li>Nos obligations légales</li>
-                <li>Nos intérêts légitimes</li>
-              </ul>
-            </section>
+          <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+            <div className="prose prose-invert max-w-none">
+              <div className="space-y-8">
+                <section>
+                  <h2 className="text-xl font-semibold text-gray-200 mb-4">
+                    1. Bases légales
+                  </h2>
+                  <ul className="list-disc list-inside space-y-2 text-gray-400">
+                    <li>Votre consentement explicite</li>
+                    <li>Exécution de nos services</li>
+                    <li>Obligations réglementaires</li>
+                    <li>Intérêts légitimes</li>
+                  </ul>
+                </section>
 
-            <section>
-              <h2 className="text-xl font-semibold text-gray-200 mb-4">
-                2. Données collectées
-              </h2>
-              <p className="text-gray-400 leading-relaxed">
-                Les données personnelles que nous collectons incluent :
-              </p>
-              <ul className="list-disc list-inside mt-4 space-y-2 text-gray-400">
-                <li>Adresse email</li>
-                <li>Images téléchargées (temporairement)</li>
-                <li>Données de connexion</li>
-                <li>Préférences d'utilisation</li>
-              </ul>
-            </section>
+                <section>
+                  <h2 className="text-xl font-semibold text-gray-200 mb-4">
+                    2. Vos droits garantis
+                  </h2>
+                  <ul className="list-disc list-inside space-y-2 text-gray-400">
+                    <li>Accès complet</li>
+                    <li>Correction immédiate</li>
+                    <li>Suppression définitive</li>
+                    <li>Portabilité simplifiée</li>
+                    <li>Opposition possible</li>
+                    <li>Traitement limité</li>
+                  </ul>
+                </section>
 
-            <section>
-              <h2 className="text-xl font-semibold text-gray-200 mb-4">
-                3. Durée de conservation
-              </h2>
-              <p className="text-gray-400 leading-relaxed">
-                Nous conservons vos données selon les durées suivantes :
-              </p>
-              <ul className="list-disc list-inside mt-4 space-y-2 text-gray-400">
-                <li>Données de compte : jusqu'à la suppression du compte</li>
-                <li>Images : supprimées après traitement</li>
-                <li>Logs de connexion : 1 an</li>
-                <li>Données de facturation : 10 ans (obligation légale)</li>
-              </ul>
-            </section>
+                <section>
+                  <h2 className="text-xl font-semibold text-gray-200 mb-4">
+                    3. Conservation
+                  </h2>
+                  <ul className="list-disc list-inside space-y-2 text-gray-400">
+                    <li>Compte : jusqu'à suppression</li>
+                    <li>Images : effacées après usage</li>
+                    <li>Logs : 12 mois maximum</li>
+                    <li>Backups : 30 jours</li>
+                  </ul>
+                </section>
 
-            <section>
-              <h2 className="text-xl font-semibold text-gray-200 mb-4">
-                4. Vos droits RGPD
-              </h2>
-              <p className="text-gray-400 leading-relaxed mb-4">
-                Conformément au RGPD, vous disposez des droits suivants :
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-gray-400">
-                <li>Droit d'accès à vos données</li>
-                <li>Droit de rectification</li>
-                <li>Droit à l'effacement ("droit à l'oubli")</li>
-                <li>Droit à la limitation du traitement</li>
-                <li>Droit à la portabilité des données</li>
-                <li>Droit d'opposition</li>
-                <li>Droit de retirer votre consentement</li>
-              </ul>
-            </section>
+                <section>
+                  <h2 className="text-xl font-semibold text-gray-200 mb-4">
+                    4. Sécurité des données
+                  </h2>
+                  <ul className="list-disc list-inside space-y-2 text-gray-400">
+                    <li>Hébergement européen</li>
+                    <li>Aucun transfert hors UE</li>
+                    <li>Partenaires conformes</li>
+                    <li>Protection renforcée</li>
+                  </ul>
+                </section>
 
-            <section>
-              <h2 className="text-xl font-semibold text-gray-200 mb-4">
-                5. Exercer vos droits
-              </h2>
-              <p className="text-gray-400 leading-relaxed">
-                Pour exercer vos droits RGPD, vous pouvez :
-              </p>
-              <ul className="list-disc list-inside mt-4 space-y-2 text-gray-400">
-                <li>Utiliser les paramètres de votre compte</li>
-                <li>Contacter notre DPO par email</li>
-                <li>Envoyer une demande écrite à notre adresse postale</li>
-              </ul>
-            </section>
+                <section>
+                  <h2 className="text-xl font-semibold text-gray-200 mb-4">
+                    5. Exercer vos droits
+                  </h2>
+                  <ul className="list-disc list-inside space-y-2 text-gray-400">
+                    <li>Contact direct DPO</li>
+                    <li>Réponse sous 30 jours</li>
+                    <li>Processus simplifié</li>
+                    <li>Identité vérifiée</li>
+                  </ul>
+                </section>
 
-            <section>
-              <h2 className="text-xl font-semibold text-gray-200 mb-4">
-                6. Transferts de données
-              </h2>
-              <p className="text-gray-400 leading-relaxed">
-                Vos données sont hébergées dans l'Union Européenne. Si un transfert hors UE est nécessaire, nous nous assurons qu'il est encadré par les garanties appropriées conformément au RGPD.
-              </p>
-            </section>
+                <section>
+                  <h2 className="text-xl font-semibold text-gray-200 mb-4">
+                    6. Délégué à la Protection
+                  </h2>
+                  <p className="text-gray-400">
+                    Notre DPO est à votre écoute :<br />
+                    <a href="mailto:contact@miraubolant.com" className="text-emerald-500 hover:text-emerald-400 transition-colors">
+                      contact@miraubolant.com
+                    </a>
+                  </p>
+                </section>
+              </div>
+            </div>
+          </div>
 
-            <section>
-              <h2 className="text-xl font-semibold text-gray-200 mb-4">
-                7. Contact DPO
-              </h2>
-              <p className="text-gray-400 leading-relaxed">
-                Notre Délégué à la Protection des Données est joignable à :
-                <a href="mailto:dpo@miremover.com" className="text-emerald-500 ml-2 hover:underline">
-                  dpo@miremover.com
-                </a>
-              </p>
-            </section>
+          <div className="p-6 border-t border-gray-800">
+            <div className="flex items-center justify-between">
+              <Link
+                to="/"
+                className="text-gray-400 hover:text-emerald-500 transition-colors flex items-center gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Retour à l'accueil
+              </Link>
+            </div>
           </div>
         </div>
       </div>

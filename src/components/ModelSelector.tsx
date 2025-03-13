@@ -68,7 +68,7 @@ export function ModelSelector({
             type="button"
             onClick={onApplyWhiteBackground}
             disabled={!hasCompletedFiles}
-            className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-colors ${
+            className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 ${
               hasWhiteBackground
                 ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white'
                 : 'bg-slate-700 hover:bg-slate-600 text-white'
@@ -82,12 +82,21 @@ export function ModelSelector({
             type="button"
             onClick={onDownloadAllJpg}
             disabled={!hasCompletedFiles}
-            className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl bg-slate-700 hover:bg-slate-600 text-white transition-colors ${
-              !hasCompletedFiles ? 'opacity-50 cursor-not-allowed' : ''
+            className={`relative h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 ${
+              hasCompletedFiles 
+                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600 shadow-lg hover:shadow-emerald-500/25'
+                : 'bg-slate-700 opacity-50 cursor-not-allowed'
             }`}
             title="Tout télécharger en JPG"
           >
-            <Download className="w-5 h-5" />
+            <Download 
+              className={`w-5 h-5 transition-transform duration-300 ${
+                hasCompletedFiles ? 'animate-bounce-scale' : ''
+              }`} 
+            />
+            {hasCompletedFiles && (
+              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 rounded-xl animate-shimmer" />
+            )}
           </button>
 
           <button

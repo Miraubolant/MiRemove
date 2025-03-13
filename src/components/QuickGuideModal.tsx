@@ -14,7 +14,8 @@ export function QuickGuideModal({ onClose }: QuickGuideModalProps) {
       tips: [
         "Formats supportés : JPG, PNG, WEBP",
         "Importation multiple possible",
-        "Compression automatique"
+        "Compression automatique",
+        "Taille maximale : 10 Mo par image"
       ]
     },
     {
@@ -24,7 +25,8 @@ export function QuickGuideModal({ onClose }: QuickGuideModalProps) {
       tips: [
         "Détection précise des contours",
         "Préservation des détails",
-        "Traitement par lots"
+        "Traitement par lots",
+        "Ajustez manuellement si nécessaire"
       ]
     },
     {
@@ -34,8 +36,24 @@ export function QuickGuideModal({ onClose }: QuickGuideModalProps) {
       tips: [
         "PNG avec transparence",
         "JPG avec fond blanc",
-        "Export groupé"
+        "Export groupé",
+        "Résolution maximale préservée"
       ]
+    }
+  ];
+
+  const faqs = [
+    {
+      question: "Quels formats d'image sont supportés ?",
+      answer: "Nous supportons les formats JPG, PNG, et WEBP."
+    },
+    {
+      question: "Puis-je traiter plusieurs images à la fois ?",
+      answer: "Oui, MiRemover permet le traitement par lots."
+    },
+    {
+      question: "Comment puis-je optimiser les résultats ?",
+      answer: "Assurez-vous que vos images sont bien éclairées et nettes pour de meilleurs résultats."
     }
   ];
 
@@ -54,13 +72,24 @@ export function QuickGuideModal({ onClose }: QuickGuideModalProps) {
                   Guide rapide
                 </h2>
                 <p className="text-sm text-gray-400 mt-1">
-                  Découvrez comment utiliser MiRemover
+                  Découvrez comment utiliser MiRemover pour supprimer le fond de vos images en quelques étapes simples.
                 </p>
               </div>
             </div>
-            <button onClick={onClose} className="btn-icon">
+            <button 
+              onClick={onClose} 
+              className="btn-icon hover:bg-slate-800/50 transition-colors duration-300"
+              aria-label="Fermer le guide"
+            >
               <X className="w-5 h-5" />
             </button>
+          </div>
+
+          {/* Introduction */}
+          <div className="mb-8">
+            <p className="text-gray-300">
+              MiRemover est un outil puissant qui utilise l'intelligence artificielle pour supprimer le fond de vos images rapidement et efficacement. Suivez les étapes ci-dessous pour commencer.
+            </p>
           </div>
 
           {/* Steps Grid */}
@@ -68,15 +97,15 @@ export function QuickGuideModal({ onClose }: QuickGuideModalProps) {
             {steps.map((step, index) => (
               <div 
                 key={index}
-                className="bg-slate-800/50 rounded-xl p-6 border border-gray-700/50 hover:border-emerald-500/50 transition-all duration-300 group"
+                className="bg-slate-800/50 rounded-xl p-6 border border-gray-700/50 hover:border-emerald-500/50 hover:shadow-lg transition-all duration-300 group"
                 style={{
                   animation: `fadeInUp 0.5s ease-out ${index * 0.1}s both`
                 }}
               >
                 {/* Step Header */}
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="bg-emerald-500/10 w-10 h-10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                    <step.icon className="w-5 h-5 text-emerald-500" />
+                  <div className="bg-emerald-500/10 w-10 h-10 rounded-lg flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors duration-300">
+                    <step.icon className="w-5 h-5 text-emerald-500 group-hover:scale-110 transition-transform duration-300" />
                   </div>
                   <div>
                     <h3 className="text-base font-semibold text-gray-200">
@@ -102,6 +131,28 @@ export function QuickGuideModal({ onClose }: QuickGuideModalProps) {
                 </ul>
               </div>
             ))}
+          </div>
+
+          {/* FAQ Section */}
+          <div className="mt-8">
+            <h3 className="text-xl font-semibold text-gray-200 mb-4">
+              Questions fréquentes
+            </h3>
+            <div className="space-y-4">
+              {faqs.map((faq, index) => (
+                <div 
+                  key={index} 
+                  className="bg-slate-800/50 rounded-xl p-4 border border-gray-700/50 hover:border-emerald-500/50 transition-all duration-300"
+                >
+                  <h4 className="text-base font-semibold text-gray-200">
+                    {faq.question}
+                  </h4>
+                  <p className="text-sm text-gray-400 mt-2">
+                    {faq.answer}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

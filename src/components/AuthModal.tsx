@@ -37,7 +37,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-200">
       <div className="bg-slate-900/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-800/50 w-full max-w-md animate-in slide-in-from-bottom-4 duration-300">
-        {/* Logo Section */}
+        {/* Header */}
         <div className="relative pt-8 pb-6 flex flex-col items-center">
           <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/10 to-transparent" />
           <div className="relative">
@@ -58,6 +58,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
         <button 
           onClick={onClose} 
           className="absolute top-4 right-4 btn-icon hover:bg-white/10"
+          aria-label="Fermer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -67,7 +68,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
           <div className="space-y-4">
             {/* Email Input */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-300">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300">
                 Email
               </label>
               <div className="relative group">
@@ -75,6 +76,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-hover:text-emerald-500 transition-colors" />
                   <input
+                    id="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -88,7 +90,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
 
             {/* Password Input */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-300">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300">
                 Mot de passe
               </label>
               <div className="relative group">
@@ -96,6 +98,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-hover:text-emerald-500 transition-colors" />
                   <input
+                    id="password"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -110,7 +113,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
 
           {/* Error Message */}
           {error && (
-            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg animate-shake">
               <p className="text-sm text-red-400">{error}</p>
             </div>
           )}

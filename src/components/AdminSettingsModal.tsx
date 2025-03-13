@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, AlertTriangle, Check, Shield, Users, Settings, Clock, BarChart3, Sparkles, Timer } from 'lucide-react';
+import { X, Save, AlertTriangle, Check, Shield, Users, Settings, Clock, BarChart3, Sparkles, Timer, FileText } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { BillingTab } from './BillingTab';
 
 interface UserStats {
   id: string;
@@ -153,6 +154,7 @@ function UserSettingsPopup({ user, onClose, onSuccess }: UserSettingsPopupProps)
 }
 
 export function AdminSettingsModal({ onClose }: AdminSettingsModalProps) {
+  const [activeTab, setActiveTab] = useState('stats');
   const [users, setUsers] = useState<UserStats[]>([]);
   const [selectedUser, setSelectedUser] = useState<UserStats | null>(null);
   const [totalStats, setTotalStats] = useState({
@@ -221,148 +223,186 @@ export function AdminSettingsModal({ onClose }: AdminSettingsModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-200">
-      <div className="bg-slate-900/95 backdrop-blur-sm rounded-xl shadow-2xl border border-gray-800/50 w-full max-w-5xl animate-in slide-in-from-bottom-4 duration-300 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-200">
+      <div className={`bg-slate-900/95 backdrop-blur-sm rounded-xl shadow-2xl border border-gray-800/50 w-full animate-in slide-in-from-bottom-4 duration-300 max-h-[95vh] overflow-y-auto ${
+        activeTab === 'billing' ? 'max-w-[95vw]' : 'max-w-5xl'
+      }`}>
         <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between sticky top-0 bg-slate-900/95 backdrop-blur-sm z-10">
           <div className="flex items-center gap-3">
             <div className="bg-emerald-500/10 p-2 rounded-lg">
               <Shield className="w-5 h-5 text-emerald-500" />
             </div>
             <h2 className="text-xl font-semibold text-gray-200">
-              Statistiques globales
+              Administration
             </h2>
           </div>
-          <button onClick={onClose} className="btn-icon">
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setActiveTab('stats')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                activeTab === 'stats'
+                  ? 'bg-emerald-500/20 text-emerald-500'
+                  : 'text-gray-400 hover:text-gray-300 hover:bg-white/5'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" />
+                <span>Statistiques</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('billing')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                activeTab === 'billing'
+                  ? 'bg-emerald-500/20 text-emerald-500'
+                  : 'text-gray-400 hover:text-gray-300 hover:bg-white/5'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                <span>Facturation</span>
+              </div>
+            </button>
+            <button onClick={onClose} className="btn-icon">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        <div className="p-6">
-          {/* Global Statistics */}
-          <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-slate-800/50 rounded-xl p-4 border border-gray-700/50">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-emerald-500" />
-                <h3 className="text-sm font-medium text-gray-400">Total images traitées</h3>
+        <div className="p-4 sm:p-6">
+          {activeTab === 'stats' ? (
+            <>
+              {/* Global Statistics */}
+              <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-slate-800/50 rounded-xl p-4 border border-gray-700/50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="w-4 h-4 text-emerald-500" />
+                    <h3 className="text-sm font-medium text-gray-400">Total images traitées</h3>
+                  </div>
+                  <p className="text-2xl font-semibold text-emerald-500">{totalStats.totalImages}</p>
+                </div>
+
+                <div className="bg-slate-800/50 rounded-xl p-4 border border-gray-700/50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Timer className="w-4 h-4 text-emerald-500" />
+                    <h3 className="text-sm font-medium text-gray-400">Temps total de traitement</h3>
+                  </div>
+                  <p className="text-2xl font-semibold text-emerald-500">{formatLongTime(totalStats.totalTime)}</p>
+                </div>
+
+                <div className="bg-slate-800/50 rounded-xl p-4 border border-gray-700/50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BarChart3 className="w-4 h-4 text-emerald-500" />
+                    <h3 className="text-sm font-medium text-gray-400">Taux de réussite moyen</h3>
+                  </div>
+                  <p className="text-2xl font-semibold text-emerald-500">{totalStats.avgSuccessRate.toFixed(1)}%</p>
+                </div>
+
+                <div className="bg-slate-800/50 rounded-xl p-4 border border-gray-700/50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="w-4 h-4 text-emerald-500" />
+                    <h3 className="text-sm font-medium text-gray-400">Temps moyen par image</h3>
+                  </div>
+                  <p className="text-2xl font-semibold text-emerald-500">{formatTime(totalStats.avgProcessingTime)}</p>
+                </div>
               </div>
-              <p className="text-2xl font-semibold text-emerald-500">{totalStats.totalImages}</p>
-            </div>
 
-            <div className="bg-slate-800/50 rounded-xl p-4 border border-gray-700/50">
-              <div className="flex items-center gap-2 mb-2">
-                <Timer className="w-4 h-4 text-emerald-500" />
-                <h3 className="text-sm font-medium text-gray-400">Temps total de traitement</h3>
-              </div>
-              <p className="text-2xl font-semibold text-emerald-500">{formatLongTime(totalStats.totalTime)}</p>
-            </div>
-
-            <div className="bg-slate-800/50 rounded-xl p-4 border border-gray-700/50">
-              <div className="flex items-center gap-2 mb-2">
-                <BarChart3 className="w-4 h-4 text-emerald-500" />
-                <h3 className="text-sm font-medium text-gray-400">Taux de réussite moyen</h3>
-              </div>
-              <p className="text-2xl font-semibold text-emerald-500">{totalStats.avgSuccessRate.toFixed(1)}%</p>
-            </div>
-
-            <div className="bg-slate-800/50 rounded-xl p-4 border border-gray-700/50">
-              <div className="flex items-center gap-2 mb-2">
-                <Clock className="w-4 h-4 text-emerald-500" />
-                <h3 className="text-sm font-medium text-gray-400">Temps moyen par image</h3>
-              </div>
-              <p className="text-2xl font-semibold text-emerald-500">{formatTime(totalStats.avgProcessingTime)}</p>
-            </div>
-          </div>
-
-          {/* Users Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-800">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Utilisateur</th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">
-                    <div className="flex items-center justify-end gap-2">
-                      <Sparkles className="w-4 h-4" />
-                      <span>Images traitées</span>
-                    </div>
-                  </th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">
-                    <div className="flex items-center justify-end gap-2">
-                      <BarChart3 className="w-4 h-4" />
-                      <span>Taux de réussite</span>
-                    </div>
-                  </th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">
-                    <div className="flex items-center justify-end gap-2">
-                      <Clock className="w-4 h-4" />
-                      <span>Temps moyen</span>
-                    </div>
-                  </th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">
-                    <div className="flex items-center justify-end gap-2">
-                      <Timer className="w-4 h-4" />
-                      <span>Temps total</span>
-                    </div>
-                  </th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((user) => {
-                  const successRate = user.processed_images > 0
-                    ? Math.round((user.success_count / user.processed_images) * 100)
-                    : 0;
-                  const avgTime = user.processed_images > 0
-                    ? user.total_processing_time / user.processed_images
-                    : 0;
-
-                  return (
-                    <tr key={user.id} className="border-b border-gray-800/50 hover:bg-slate-800/30">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-300">{user.email}</span>
-                          {user.is_admin && (
-                            <span className="text-xs bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded">
-                              Admin
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <span className="text-gray-300">{user.processed_images}</span>
-                        <span className="text-gray-500"> / </span>
-                        <span className="text-emerald-500">{user.image_limit}</span>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <span className={`${
-                          successRate >= 90 ? 'text-emerald-500' :
-                          successRate >= 70 ? 'text-yellow-500' :
-                          'text-red-500'
-                        }`}>
-                          {successRate}%
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right text-gray-300">
-                        {formatTime(avgTime)}
-                      </td>
-                      <td className="py-3 px-4 text-right text-gray-300">
-                        {formatLongTime(user.total_processing_time)}
-                      </td>
-                      <td className="py-3 px-4 text-right">
+              {/* Users Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-800">
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Utilisateur</th>
+                      <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">
                         <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => setSelectedUser(user)}
-                            className="text-xs bg-slate-700 hover:bg-slate-600 text-gray-300 px-2 py-1 rounded transition-colors"
-                          >
-                            Modifier
-                          </button>
+                          <Sparkles className="w-4 h-4" />
+                          <span>Images traitées</span>
                         </div>
-                      </td>
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">
+                        <div className="flex items-center justify-end gap-2">
+                          <BarChart3 className="w-4 h-4" />
+                          <span>Taux de réussite</span>
+                        </div>
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">
+                        <div className="flex items-center justify-end gap-2">
+                          <Clock className="w-4 h-4" />
+                          <span>Temps moyen</span>
+                        </div>
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">
+                        <div className="flex items-center justify-end gap-2">
+                          <Timer className="w-4 h-4" />
+                          <span>Temps total</span>
+                        </div>
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">Actions</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody>
+                    {users.map((user) => {
+                      const successRate = user.processed_images > 0
+                        ? Math.round((user.success_count / user.processed_images) * 100)
+                        : 0;
+                      const avgTime = user.processed_images > 0
+                        ? user.total_processing_time / user.processed_images
+                        : 0;
+
+                      return (
+                        <tr key={user.id} className="border-b border-gray-800/50 hover:bg-slate-800/30">
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-300">{user.email}</span>
+                              {user.is_admin && (
+                                <span className="text-xs bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded">
+                                  Admin
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <span className="text-gray-300">{user.processed_images}</span>
+                            <span className="text-gray-500"> / </span>
+                            <span className="text-emerald-500">{user.image_limit}</span>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <span className={`${
+                              successRate >= 90 ? 'text-emerald-500' :
+                              successRate >= 70 ? 'text-yellow-500' :
+                              'text-red-500'
+                            }`}>
+                              {successRate}%
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-right text-gray-300">
+                            {formatTime(avgTime)}
+                          </td>
+                          <td className="py-3 px-4 text-right text-gray-300">
+                            {formatLongTime(user.total_processing_time)}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => setSelectedUser(user)}
+                                className="text-xs bg-slate-700 hover:bg-slate-600 text-gray-300 px-2 py-1 rounded-lg transition-colors"
+                              >
+                                Modifier
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : (
+            <div className="min-w-[800px]">
+              <BillingTab />
+            </div>
+          )}
         </div>
       </div>
 

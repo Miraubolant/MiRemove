@@ -10,7 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@shadcn/ui": "^0.0.4",
     "@supabase/supabase-js": "^2.39.7",
+    "framer-motion": "^12.5.0",
     "js-cookie": "^3.0.5",
     "jszip": "^3.10.1",
     "lucide-react": "^0.344.0",

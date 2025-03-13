@@ -5,7 +5,7 @@ import Cookies from 'js-cookie';
 
 export function CookieConsent() {
   const [isVisible, setIsVisible] = useState(false);
-  const [showDetails, setShowDetails] = useState(true);
+  const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     const hasAccepted = Cookies.get('cookie-consent');
@@ -33,85 +33,47 @@ export function CookieConsent() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6">
+      {/* Overlay */}
       <div 
         className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-500"
         style={{ animationFillMode: 'forwards' }}
       />
 
+      {/* Modal */}
       <div 
-        className="relative w-full max-w-2xl animate-in zoom-in-95 duration-500"
+        className="relative w-full max-w-md animate-in zoom-in-95 duration-500"
         style={{ animationFillMode: 'forwards' }}
       >
         <div className="relative bg-slate-900/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-800/50 overflow-hidden">
-          <div className="absolute inset-0">
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-transparent opacity-50 animate-pulse" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(16,185,129,0.1),transparent)] animate-[spin_8s_linear_infinite]" />
-          </div>
-          
+          {/* Header */}
           <div className="relative p-6 flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="relative group">
-                <div className="absolute inset-0 bg-emerald-500/20 rounded-xl blur-xl group-hover:blur-2xl transition-all duration-500" />
-                <div className="relative bg-gradient-to-br from-emerald-500 to-emerald-600 p-3 rounded-xl shadow-lg transform group-hover:scale-110 transition-all duration-500">
-                  <Cookie className="w-6 h-6 text-white transform group-hover:rotate-12 transition-transform duration-500" />
+                <div className="relative bg-emerald-500/10 p-3 rounded-lg">
+                  <Cookie className="w-6 h-6 text-emerald-500" />
                 </div>
               </div>
               <div>
-                <h2 className="text-xl font-semibold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                <h2 className="text-xl font-semibold text-gray-200">
                   Votre vie privée
                 </h2>
                 <p className="text-sm text-gray-400 mt-1">
-                  Nous utilisons des cookies pour améliorer votre expérience
+                  Nous utilisons des cookies pour améliorer votre expérience.
                 </p>
               </div>
             </div>
             <button
               onClick={() => setIsVisible(false)}
               className="relative group p-2 rounded-lg text-gray-400 hover:text-gray-300 transition-colors hover:bg-white/5"
+              aria-label="Fermer"
             >
-              <X className="w-5 h-5 transform group-hover:rotate-90 transition-transform duration-300" />
+              <X className="w-5 h-5" />
             </button>
           </div>
 
+          {/* Content */}
           <div className="px-6 space-y-4 transition-all duration-500 ease-in-out">
-            <div className="space-y-4">
-              <div className="group flex items-start gap-3 p-4 bg-slate-800/50 rounded-xl border border-gray-700/50 hover:border-emerald-500/50 transition-all duration-300 transform hover:scale-[1.02]">
-                <Shield className="w-5 h-5 text-emerald-500 mt-0.5 group-hover:scale-110 transition-transform duration-300" />
-                <div>
-                  <h3 className="text-sm font-medium text-gray-300 group-hover:text-gray-200 transition-colors">
-                    Cookies essentiels
-                  </h3>
-                  <p className="text-sm text-gray-400 mt-1 group-hover:text-gray-300 transition-colors">
-                    Nécessaires au fonctionnement du site. Ne peuvent pas être désactivés.
-                  </p>
-                </div>
-              </div>
-
-              <div className="group flex items-start gap-3 p-4 bg-slate-800/50 rounded-xl border border-gray-700/50 hover:border-emerald-500/50 transition-all duration-300 transform hover:scale-[1.02]">
-                <Info className="w-5 h-5 text-emerald-500 mt-0.5 group-hover:scale-110 transition-transform duration-300" />
-                <div>
-                  <h3 className="text-sm font-medium text-gray-300 group-hover:text-gray-200 transition-colors">
-                    Cookies analytiques
-                  </h3>
-                  <p className="text-sm text-gray-400 mt-1 group-hover:text-gray-300 transition-colors">
-                    Nous aident à comprendre comment vous utilisez le site pour l'améliorer.
-                  </p>
-                </div>
-              </div>
-
-              <div className="group flex items-start gap-3 p-4 bg-slate-800/50 rounded-xl border border-gray-700/50 hover:border-emerald-500/50 transition-all duration-300 transform hover:scale-[1.02]">
-                <Bell className="w-5 h-5 text-emerald-500 mt-0.5 group-hover:scale-110 transition-transform duration-300" />
-                <div>
-                  <h3 className="text-sm font-medium text-gray-300 group-hover:text-gray-200 transition-colors">
-                    Cookies de préférences
-                  </h3>
-                  <p className="text-sm text-gray-400 mt-1 group-hover:text-gray-300 transition-colors">
-                    Permettent de sauvegarder vos préférences et personnaliser votre expérience.
-                  </p>
-                </div>
-              </div>
-            </div>
-
+            {/* Legal Links */}
             <div className="flex items-center justify-center gap-4 text-sm py-4">
               <Link
                 to="/privacy"
@@ -137,8 +99,50 @@ export function CookieConsent() {
                 <span className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-500/50 scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
               </Link>
             </div>
+
+            {/* Details Section */}
+            {showDetails && (
+              <div className="space-y-4">
+                <div className="group flex items-start gap-3 p-4 bg-slate-800/50 rounded-xl border border-gray-700/50 hover:border-emerald-500/50 transition-all duration-300">
+                  <Shield className="w-5 h-5 text-emerald-500 mt-0.5" />
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-300">
+                      Cookies essentiels
+                    </h3>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Nécessaires au fonctionnement du site. Ne peuvent pas être désactivés.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="group flex items-start gap-3 p-4 bg-slate-800/50 rounded-xl border border-gray-700/50 hover:border-emerald-500/50 transition-all duration-300">
+                  <Info className="w-5 h-5 text-emerald-500 mt-0.5" />
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-300">
+                      Cookies analytiques
+                    </h3>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Nous aident à comprendre comment vous utilisez le site pour l'améliorer.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="group flex items-start gap-3 p-4 bg-slate-800/50 rounded-xl border border-gray-700/50 hover:border-emerald-500/50 transition-all duration-300">
+                  <Bell className="w-5 h-5 text-emerald-500 mt-0.5" />
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-300">
+                      Cookies de préférences
+                    </h3>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Permettent de sauvegarder vos préférences et personnaliser votre expérience.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
+          {/* Footer */}
           <div className="relative p-6 pt-0">
             <div className="absolute top-0 left-4 right-4 h-px overflow-hidden">
               <div className="w-full h-full bg-gradient-to-r from-transparent via-gray-700/50 to-transparent animate-shimmer" />
@@ -149,7 +153,7 @@ export function CookieConsent() {
                 onClick={() => setShowDetails(!showDetails)}
                 className="group w-full sm:w-auto order-1 sm:order-none px-4 py-2.5 text-sm text-gray-400 hover:text-gray-300 transition-colors flex items-center justify-center gap-2"
               >
-                <span>Détails</span>
+                <span>{showDetails ? "Masquer les détails" : "Afficher les détails"}</span>
                 <ChevronDown
                   className={`w-4 h-4 transition-transform duration-300 ${
                     showDetails ? 'rotate-180' : ''

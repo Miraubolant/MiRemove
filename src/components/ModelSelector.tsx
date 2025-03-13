@@ -68,11 +68,11 @@ export function ModelSelector({
             type="button"
             onClick={onApplyWhiteBackground}
             disabled={!hasCompletedFiles}
-            className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 ${
+            className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${
               hasWhiteBackground
                 ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white'
                 : 'bg-slate-700 hover:bg-slate-600 text-white'
-            } ${!hasCompletedFiles ? 'opacity-50 cursor-not-allowed' : ''}`}
+            } ${!hasCompletedFiles ? 'opacity-50 cursor-not-allowed hover:scale-100' : ''}`}
             title={hasWhiteBackground ? "Retirer le fond blanc" : "Appliquer un fond blanc à toutes les images"}
           >
             <PaintBucket className="w-5 h-5" />
@@ -82,30 +82,23 @@ export function ModelSelector({
             type="button"
             onClick={onDownloadAllJpg}
             disabled={!hasCompletedFiles}
-            className={`relative h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 ${
+            className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${
               hasCompletedFiles 
-                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600 shadow-lg hover:shadow-emerald-500/25'
-                : 'bg-slate-700 opacity-50 cursor-not-allowed'
+                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600'
+                : 'bg-slate-700 opacity-50 cursor-not-allowed hover:scale-100'
             }`}
             title="Tout télécharger en JPG"
           >
-            <Download 
-              className={`w-5 h-5 transition-transform duration-300 ${
-                hasCompletedFiles ? 'animate-bounce-scale' : ''
-              }`} 
-            />
-            {hasCompletedFiles && (
-              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 rounded-xl animate-shimmer" />
-            )}
+            <Download className="w-5 h-5" />
           </button>
 
           <button
             type="submit"
             onClick={handleSubmit}
             disabled={isProcessing || !hasPendingFiles}
-            className={`h-[46px] px-6 rounded-xl font-medium transition-colors flex items-center gap-2 min-w-[200px] ${
+            className={`h-[46px] px-6 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 min-w-[200px] ${
               !isProcessing && hasPendingFiles
-                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white'
+                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:scale-105 active:scale-95'
                 : 'bg-slate-800/50 text-gray-500 cursor-not-allowed'
             }`}
           >

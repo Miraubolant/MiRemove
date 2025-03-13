@@ -58,6 +58,25 @@ export function StatsModal({ onClose, stats }: StatsModalProps) {
     return `${minutes}m ${remainingSeconds.toFixed(1)}s`;
   };
 
+  const formatLongTime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+
+    const parts = [];
+    if (hours > 0) {
+      parts.push(`${hours}h`);
+    }
+    if (minutes > 0 || hours > 0) {
+      parts.push(`${minutes}m`);
+    }
+    if (remainingSeconds > 0 || (hours === 0 && minutes === 0)) {
+      parts.push(`${remainingSeconds}s`);
+    }
+
+    return parts.join(' ');
+  };
+
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-200">
       <div className="bg-slate-900/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-800/50 w-full max-w-4xl animate-in slide-in-from-bottom-4 duration-300">
@@ -101,9 +120,9 @@ export function StatsModal({ onClose, stats }: StatsModalProps) {
                 color: "emerald"
               },
               {
-                icon: ImageIcon,
-                label: "Limite totale",
-                value: userStats?.image_limit || "∞",
+                icon: Timer,
+                label: "Temps total",
+                value: formatLongTime(stats.totalProcessingTime),
                 color: "emerald"
               }
             ].map((stat, index) => (
@@ -169,9 +188,11 @@ export function StatsModal({ onClose, stats }: StatsModalProps) {
                     <Timer className="w-4 h-4 text-emerald-500" />
                     <span className="text-sm text-gray-400">Total</span>
                   </div>
-                  <span className="text-sm font-medium text-gray-300">
-                    {formatTime(stats.totalProcessingTime)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold text-emerald-500">
+                      {formatLongTime(stats.totalProcessingTime)}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg group-hover:bg-slate-700/50 transition-colors duration-300">
                   <div className="flex items-center gap-2">

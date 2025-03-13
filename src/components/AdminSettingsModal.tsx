@@ -202,15 +202,22 @@ export function AdminSettingsModal({ onClose }: AdminSettingsModalProps) {
   };
 
   const formatLongTime = (seconds: number): string => {
-    if (seconds < 60) return `${seconds.toFixed(1)} secondes`;
-    if (seconds < 3600) {
-      const minutes = Math.floor(seconds / 60);
-      const secs = seconds % 60;
-      return `${minutes} minute${minutes > 1 ? 's' : ''} ${secs > 0 ? `${Math.round(secs)} seconde${secs > 1 ? 's' : ''}` : ''}`;
-    }
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    return `${hours} heure${hours > 1 ? 's' : ''} ${minutes > 0 ? `${minutes} minute${minutes > 1 ? 's' : ''}` : ''}`;
+    const remainingSeconds = Math.floor(seconds % 60);
+
+    const parts = [];
+    if (hours > 0) {
+      parts.push(`${hours}h`);
+    }
+    if (minutes > 0 || hours > 0) {
+      parts.push(`${minutes}m`);
+    }
+    if (remainingSeconds > 0 || (hours === 0 && minutes === 0)) {
+      parts.push(`${remainingSeconds}s`);
+    }
+
+    return parts.join(' ');
   };
 
   return (
@@ -338,7 +345,7 @@ export function AdminSettingsModal({ onClose }: AdminSettingsModalProps) {
                         {formatTime(avgTime)}
                       </td>
                       <td className="py-3 px-4 text-right text-gray-300">
-                        {formatTime(user.total_processing_time)}
+                        {formatLongTime(user.total_processing_time)}
                       </td>
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">

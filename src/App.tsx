@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Header } from './components/Header';
 import { ModelSelector } from './components/ModelSelector';
 import { ImageUploader } from './components/ImageUploader';
@@ -10,15 +11,19 @@ import { StatsProvider } from './contexts/StatsContext';
 import { LimitModal } from './components/LimitModal';
 import { AuthModal } from './components/AuthModal';
 import { QuickGuideModal } from './components/QuickGuideModal';
+import { CookieConsent } from './components/CookieConsent';
 import { useUsageStore } from './stores/usageStore';
 import { useAuthStore } from './stores/authStore';
 import { useAdminSettingsStore } from './stores/adminSettingsStore';
 import { removeBackground } from './services/api';
 import { loadImagesMetadata } from './services/imageService';
+import { Privacy } from './pages/Privacy';
+import { Terms } from './pages/Terms';
+import { GDPR } from './pages/GDPR';
 import type { ImageFile } from './types';
 import JSZip from 'jszip';
 
-function App() {
+function MainApp() {
   const [selectedFiles, setSelectedFiles] = useState<ImageFile[]>([]);
   const [selectedModel, setSelectedModel] = useState('bria');
   const [isDragging, setIsDragging] = useState(false);
@@ -56,7 +61,6 @@ function App() {
       model: selectedModel
     }));
 
-    // Charger les métadonnées des images
     const filesWithMetadata = await loadImagesMetadata(newFiles);
     setSelectedFiles(prev => [...filesWithMetadata, ...prev]);
   };
@@ -239,81 +243,96 @@ function App() {
   const emptyFrames = Array(emptyFramesCount - selectedFiles.length).fill(null);
 
   return (
-    <StatsProvider>
-      <div className="min-h-screen bg-slate-900">
-        <Header onShowGuide={() => setShowGuideModal(true)} />
+    <div className="min-h-screen bg-slate-900">
+      <Header onShowGuide={() => setShowGuideModal(true)} />
 
-        <main className="max-w-[1600px] mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
-          <ImageUploader
-            isDragging={isDragging}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onFileChange={handleFileChange}
+      <main className="max-w-[1600px] mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <ImageUploader
+          isDragging={isDragging}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onFileChange={handleFileChange}
+        />
+
+        <div className="mt-8">
+          <ModelSelector
+            onSubmit={handleSubmit}
+            hasPendingFiles={hasPendingFiles}
+            hasCompletedFiles={hasCompletedFiles}
+            onDownloadAllJpg={downloadAllAsJpg}
+            onApplyWhiteBackground={toggleWhiteBackground}
+            hasWhiteBackground={hasWhiteBackground}
+            isProcessing={processingBatch}
+            totalToProcess={totalToProcess}
+            completed={totalProcessed}
+            pendingCount={pendingCount}
           />
+        </div>
 
-          <div className="mt-8">
-            <ModelSelector
-              onSubmit={handleSubmit}
-              hasPendingFiles={hasPendingFiles}
-              hasCompletedFiles={hasCompletedFiles}
-              onDownloadAllJpg={downloadAllAsJpg}
-              onApplyWhiteBackground={toggleWhiteBackground}
-              hasWhiteBackground={hasWhiteBackground}
-              isProcessing={processingBatch}
-              totalToProcess={totalToProcess}
-              completed={totalProcessed}
-              pendingCount={pendingCount}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6 mt-8">
+          {selectedFiles.map(file => (
+            <ImagePreview
+              key={file.id}
+              file={file}
+              onRemove={removeFile}
+              onBackgroundColorChange={handleBackgroundColorChange}
+              onProcess={processImage}
+              outputDimensions={outputDimensions}
             />
-          </div>
+          ))}
+          {emptyFrames.map((_, index) => (
+            <EmptyFrame
+              key={`empty-${index}`}
+              onFileChange={handleFileChange}
+            />
+          ))}
+        </div>
+      </main>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6 mt-8">
-            {selectedFiles.map(file => (
-              <ImagePreview
-                key={file.id}
-                file={file}
-                onRemove={removeFile}
-                onBackgroundColorChange={handleBackgroundColorChange}
-                onProcess={processImage}
-                outputDimensions={outputDimensions}
-              />
-            ))}
-            {emptyFrames.map((_, index) => (
-              <EmptyFrame
-                key={`empty-${index}`}
-                onFileChange={handleFileChange}
-              />
-            ))}
-          </div>
-        </main>
+      <Footer />
+      <ScrollToTop />
 
-        <Footer />
-        <ScrollToTop />
+      {showLimitModal && (
+        <LimitModal
+          onClose={() => setShowLimitModal(false)}
+          onLogin={() => {
+            setShowLimitModal(false);
+            setShowAuthModal(true);
+          }}
+          isImageLimit={isImageLimit}
+        />
+      )}
 
-        {showLimitModal && (
-          <LimitModal
-            onClose={() => setShowLimitModal(false)}
-            onLogin={() => {
-              setShowLimitModal(false);
-              setShowAuthModal(true);
-            }}
-            isImageLimit={isImageLimit}
-          />
-        )}
+      {showAuthModal && (
+        <AuthModal
+          onClose={() => setShowAuthModal(false)}
+        />
+      )}
 
-        {showAuthModal && (
-          <AuthModal
-            onClose={() => setShowAuthModal(false)}
-          />
-        )}
+      {showGuideModal && (
+        <QuickGuideModal
+          onClose={() => setShowGuideModal(false)}
+        />
+      )}
 
-        {showGuideModal && (
-          <QuickGuideModal
-            onClose={() => setShowGuideModal(false)}
-          />
-        )}
-      </div>
-    </StatsProvider>
+      <CookieConsent />
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <StatsProvider>
+        <Routes>
+          <Route path="/" element={<MainApp />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/gdpr" element={<GDPR />} />
+        </Routes>
+      </StatsProvider>
+    </Router>
   );
 }
 

@@ -102,6 +102,11 @@ body {
   }
 }
 
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
 /* Animations pour les particules */
 @keyframes particle-1 {
   0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
@@ -142,6 +147,10 @@ body {
   animation: fade-in 0.2s ease-out;
 }
 
+.zoom-in-95 {
+  animation: zoom-in-95 0.2s ease-out;
+}
+
 .slide-in-from-bottom-4 {
   animation: slide-in-from-bottom-4 0.3s ease-out;
 }
@@ -160,6 +169,17 @@ body {
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes zoom-in-95 {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes slide-in-from-bottom-4 {

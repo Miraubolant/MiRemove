@@ -43,15 +43,18 @@ export function ImageUploader({ isDragging, onDragOver, onDragLeave, onDrop, onF
           className="relative cursor-pointer transform hover:scale-110 transition-all duration-500 group"
           onClick={handleClick}
         >
-          {/* Button background with gradient */}
+          {/* Arrière-plan avec dégradé */}
           <div className="relative bg-gradient-to-br from-emerald-500 to-emerald-600 p-4 sm:p-6 rounded-full shadow-lg mb-4 sm:mb-6 group-hover:shadow-emerald-500/25 transition-all duration-500">
-            {/* Shine effect */}
+            {/* Effet de brillance */}
             <div className="absolute inset-0 rounded-full overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"></div>
             </div>
             
-            {/* Icon */}
-            <Upload className="w-8 h-8 sm:w-12 sm:h-12 text-white transform -rotate-45 group-hover:rotate-0 transition-transform duration-500" />
+            {/* Icône avec effet de grossissement */}
+            <Upload className="w-8 h-8 sm:w-12 sm:h-12 text-white group-hover:scale-125 transition-all duration-500" />
+
+            {/* Effet de lueur */}
+            <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
           </div>
         </div>
         
@@ -68,10 +71,10 @@ export function ImageUploader({ isDragging, onDragOver, onDragLeave, onDrop, onF
           onClick={handleClick}
           className="relative group overflow-hidden bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-medium px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-emerald-500/25 flex items-center justify-center gap-2 sm:gap-2.5 hover:scale-105 active:scale-[0.98] w-full sm:w-auto"
         >
-          {/* Shine effect */}
+          {/* Effet de brillance */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"></div>
           
-          {/* Animated particles */}
+          {/* Particules animées */}
           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
             {[...Array(3)].map((_, i) => (
               <div

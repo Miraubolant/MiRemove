@@ -67,39 +67,40 @@ export function ModelSelector({
           <button
             type="button"
             onClick={onApplyWhiteBackground}
-            className={`relative group overflow-hidden h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 ${
+            disabled={!hasCompletedFiles}
+            className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-colors ${
               hasWhiteBackground
-                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white shadow-lg hover:shadow-emerald-500/25'
+                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white'
                 : 'bg-slate-700 hover:bg-slate-600 text-white'
-            }`}
+            } ${!hasCompletedFiles ? 'opacity-50 cursor-not-allowed' : ''}`}
             title={hasWhiteBackground ? "Retirer le fond blanc" : "Appliquer un fond blanc à toutes les images"}
           >
-            <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-            <PaintBucket className="w-5 h-5 relative" />
+            <PaintBucket className="w-5 h-5" />
           </button>
 
           <button
             type="button"
             onClick={onDownloadAllJpg}
-            className="relative group overflow-hidden h-[46px] w-[46px] flex items-center justify-center rounded-xl bg-slate-700 hover:bg-slate-600 text-white transition-all duration-300"
+            disabled={!hasCompletedFiles}
+            className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl bg-slate-700 hover:bg-slate-600 text-white transition-colors ${
+              !hasCompletedFiles ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
             title="Tout télécharger en JPG"
           >
-            <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-            <Download className="w-5 h-5 relative" />
+            <Download className="w-5 h-5" />
           </button>
 
           <button
             type="submit"
             onClick={handleSubmit}
             disabled={isProcessing || !hasPendingFiles}
-            className={`relative group overflow-hidden h-[46px] px-6 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 min-w-[200px] ${
+            className={`h-[46px] px-6 rounded-xl font-medium transition-colors flex items-center gap-2 min-w-[200px] ${
               !isProcessing && hasPendingFiles
-                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white shadow-lg hover:shadow-emerald-500/25 hover:scale-[1.02] active:scale-[0.98]'
+                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white'
                 : 'bg-slate-800/50 text-gray-500 cursor-not-allowed'
             }`}
           >
-            <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-            <div className="relative flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <ImageIcon className="w-5 h-5" />
               <span>
                 {!user ? "Se connecter pour traiter" : "Traiter les images"}

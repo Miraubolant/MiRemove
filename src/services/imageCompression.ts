@@ -14,9 +14,26 @@ const DEFAULT_OPTIONS: CompressionOptions = {
   maxSizeMB: 10
 };
 
+// Use Web Workers for image processing when available
+const createWorker = (fn: Function) => {
+  const blob = new Blob(['self.onmessage = ', fn.toString()], { type: 'text/javascript' });
+  return new Worker(URL.createObjectURL(blob));
+};
+
+const imageProcessingWorker = typeof Worker !== 'undefined' ? createWorker((e: MessageEvent) => {
+  const { imageData, width, height } = e.data;
+  const canvas = new OffscreenCanvas(width, height);
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.putImageData(imageData, 0, 0);
+    canvas.convertToBlob().then(blob => {
+      self.postMessage({ blob });
+    });
+  }
+}) : null;
+
 export async function convertWebPToJPG(file: File): Promise<File> {
   return new Promise((resolve, reject) => {
-    // Si ce n'est pas un WebP, retourner le fichier original
     if (!file.type.includes('webp')) {
       resolve(file);
       return;
@@ -43,7 +60,6 @@ export async function convertWebPToJPG(file: File): Promise<File> {
             return;
           }
 
-          // Créer un nouveau fichier avec l'extension .jpg
           const newFileName = file.name.replace(/\.webp$/i, '.jpg');
           const convertedFile = new File([blob], newFileName, {
             type: 'image/jpeg',
@@ -65,14 +81,38 @@ export async function convertWebPToJPG(file: File): Promise<File> {
   });
 }
 
+// Implement progressive JPEG compression
+async function compressProgressively(
+  canvas: HTMLCanvasElement,
+  initialQuality: number,
+  targetSize: number,
+  maxAttempts = 5
+): Promise<Blob> {
+  let quality = initialQuality;
+  let attempt = 0;
+  let blob: Blob;
+
+  do {
+    blob = await new Promise<Blob>(resolve => {
+      canvas.toBlob(b => resolve(b!), 'image/jpeg', quality);
+    });
+
+    if (blob.size <= targetSize || attempt >= maxAttempts) break;
+
+    quality *= Math.sqrt(targetSize / blob.size);
+    quality = Math.max(0.1, Math.min(1, quality));
+    attempt++;
+  } while (true);
+
+  return blob;
+}
+
 export async function compressImage(
   file: File,
   options: CompressionOptions = DEFAULT_OPTIONS
 ): Promise<File> {
-  // Convertir d'abord le WebP en JPG si nécessaire
   const processedFile = await convertWebPToJPG(file);
 
-  // Si l'image est déjà assez petite, on la retourne telle quelle
   if (processedFile.size <= (options.maxSizeMB || DEFAULT_OPTIONS.maxSizeMB!) * 1024 * 1024) {
     return processedFile;
   }
@@ -85,14 +125,12 @@ export async function compressImage(
     throw new Error('Impossible de créer le contexte canvas');
   }
 
-  // Charger l'image
   await new Promise((resolve, reject) => {
     img.onload = resolve;
     img.onerror = reject;
     img.src = URL.createObjectURL(processedFile);
   });
 
-  // Calculer les dimensions optimales
   let width = img.width;
   let height = img.height;
   
@@ -106,56 +144,52 @@ export async function compressImage(
     height = options.maxHeight || DEFAULT_OPTIONS.maxHeight!;
   }
 
-  // Redimensionner l'image
   canvas.width = width;
   canvas.height = height;
-  ctx.drawImage(img, 0, 0, width, height);
 
-  // Libérer la mémoire
-  URL.revokeObjectURL(img.src);
-
-  // Compression progressive
-  let quality = options.quality || DEFAULT_OPTIONS.quality!;
-  let blob = await new Promise<Blob>(resolve => {
-    canvas.toBlob(
-      b => resolve(b!),
-      'image/jpeg',
-      quality
-    );
+  // Use createImageBitmap for better performance
+  const bitmap = await createImageBitmap(img, {
+    resizeWidth: width,
+    resizeHeight: height,
+    resizeQuality: 'high'
   });
 
-  // Réduire progressivement la qualité jusqu'à atteindre la taille cible
-  while (
-    blob.size > (options.maxSizeMB || DEFAULT_OPTIONS.maxSizeMB!) * 1024 * 1024 &&
-    quality > 0.1
-  ) {
-    quality -= 0.1;
-    blob = await new Promise<Blob>(resolve => {
-      canvas.toBlob(
-        b => resolve(b!),
-        'image/jpeg',
-        quality
-      );
-    });
-  }
+  ctx.drawImage(bitmap, 0, 0);
+  bitmap.close();
+  URL.revokeObjectURL(img.src);
 
-  // Créer un nouveau fichier avec les métadonnées appropriées
+  const targetSize = (options.maxSizeMB || DEFAULT_OPTIONS.maxSizeMB!) * 1024 * 1024;
+  const blob = await compressProgressively(
+    canvas,
+    options.quality || DEFAULT_OPTIONS.quality!,
+    targetSize
+  );
+
   return new File([blob], processedFile.name, {
     type: 'image/jpeg',
     lastModified: processedFile.lastModified
   });
 }
 
-export function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+export async function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    const url = URL.createObjectURL(file);
+
     img.onload = () => {
-      resolve({
-        width: img.width,
-        height: img.height
-      });
+      const dimensions = {
+        width: img.naturalWidth,
+        height: img.naturalHeight
+      };
+      URL.revokeObjectURL(url);
+      resolve(dimensions);
     };
-    img.onerror = reject;
-    img.src = URL.createObjectURL(file);
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Impossible de charger l'image"));
+    };
+
+    img.src = url;
   });
 }

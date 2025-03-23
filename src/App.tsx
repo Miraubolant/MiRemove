@@ -20,6 +20,7 @@ import { loadImagesMetadata } from './services/imageService';
 import { Privacy } from './pages/Privacy';
 import { Terms } from './pages/Terms';
 import { GDPR } from './pages/GDPR';
+import { GroupLimitModal } from './components/GroupLimitModal';
 import type { ImageFile } from './types';
 import JSZip from 'jszip';
 
@@ -36,6 +37,8 @@ function MainApp() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [isImageLimit, setIsImageLimit] = useState(false);
+  const [showGroupLimitModal, setShowGroupLimitModal] = useState(false);
+  const [groupLimitMessage, setGroupLimitMessage] = useState('');
   const { incrementCount, canProcess, remainingProcesses } = useUsageStore();
   const { user } = useAuthStore();
   const { settings } = useAdminSettingsStore();
@@ -93,7 +96,15 @@ function MainApp() {
           setIsImageLimit(true);
         }
         setShowLimitModal(true);
+        return;
       }
+    }
+
+    // Check group limit
+    const groupCheck = await useUsageStore.getState().checkGroupLimit();
+    if (!groupCheck.canProcess) {
+      setGroupLimitMessage(groupCheck.message || 'Limite de groupe atteinte');
+      setShowGroupLimitModal(true);
       return;
     }
 
@@ -313,6 +324,13 @@ function MainApp() {
       {showGuideModal && (
         <QuickGuideModal
           onClose={() => setShowGuideModal(false)}
+        />
+      )}
+
+      {showGroupLimitModal && (
+        <GroupLimitModal
+          onClose={() => setShowGroupLimitModal(false)}
+          message={groupLimitMessage}
         />
       )}
 

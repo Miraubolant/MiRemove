@@ -48,7 +48,7 @@ export function StatsProvider({ children }: { children: React.ReactNode }) {
       try {
         const { data: existingStats, error } = await supabase
           .from('user_stats')
-          .select('*')
+          .select('processed_images, success_count, failure_count, total_processing_time')
           .eq('user_id', user.id)
           .maybeSingle();
 

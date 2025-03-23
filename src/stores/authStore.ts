@@ -26,16 +26,31 @@ export const useAuthStore = create<AuthState>((set) => ({
     const { error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`
+      }
     });
     if (error) throw error;
   },
   signOut: async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    set({ user: null });
-    useUsageStore.getState().setAuthenticated(false);
-    // Rafraîchir la page après la déconnexion
-    window.location.reload();
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      set({ user: null });
+      useUsageStore.getState().setAuthenticated(false);
+      
+      // Clear any stored session data
+      localStorage.removeItem('supabase.auth.token');
+      
+      // Optional: Refresh the page to clear all state
+      window.location.reload();
+    } catch (err) {
+      console.error('Error signing out:', err);
+      // Still clear local state even if API call fails
+      set({ user: null });
+      useUsageStore.getState().setAuthenticated(false);
+    }
   },
   setUser: (user) => {
     set({ user, loading: false });

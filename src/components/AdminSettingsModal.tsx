@@ -1,18 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, AlertTriangle, Check, Shield, Users, Settings, Clock, BarChart3, Sparkles, Timer, FileText } from 'lucide-react';
+import { X, Sparkles, Clock, CheckCircle2, Timer, BarChart3, Users, Shield, Search, UserPlus, UserMinus, Settings, Edit2, Save, AlertTriangle, Filter, SlidersHorizontal, UserCog, LayoutGrid, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { BillingTab } from './BillingTab';
+import { useAuthStore } from '../stores/authStore';
 
 interface UserStats {
   id: string;
   user_id: string;
   email: string;
-  image_limit: number;
   processed_images: number;
   success_count: number;
   failure_count: number;
   total_processing_time: number;
   is_admin: boolean;
+}
+
+interface Group {
+  id: string;
+  name: string;
+  image_limit: number;
+  member_count?: number;
+  total_processed?: number;
+  stats?: {
+    success_rate?: number;
+    avg_processing_time?: number;
+    total_processing_time?: number;
+  };
+}
+
+interface GroupMember {
+  id: string;
+  user_id: string;
+  email: string;
+  processed_images?: number;
+  success_rate?: number;
+  avg_processing_time?: number;
+  total_processing_time?: number;
 }
 
 interface AdminSettingsModalProps {
@@ -26,36 +48,8 @@ interface UserSettingsPopupProps {
 }
 
 function UserSettingsPopup({ user, onClose, onSuccess }: UserSettingsPopupProps) {
-  const [newImageLimit, setNewImageLimit] = useState(user.image_limit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  async function handleUpdateImageLimit() {
-    if (newImageLimit < 0) return;
-
-    setSaving(true);
-    setError(null);
-
-    try {
-      const { error: updateError } = await supabase
-        .from('user_stats')
-        .update({
-          image_limit: newImageLimit,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.user_id);
-
-      if (updateError) throw updateError;
-
-      onSuccess();
-      onClose();
-    } catch (err) {
-      setError("Erreur lors de la modification de la limite d'images");
-      console.error('Error updating image limit:', err);
-    } finally {
-      setSaving(false);
-    }
-  }
 
   async function handleToggleAdmin() {
     setSaving(true);
@@ -110,29 +104,6 @@ function UserSettingsPopup({ user, onClose, onSuccess }: UserSettingsPopupProps)
           <div className="space-y-6">
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-300">
-                Limite d'images
-              </label>
-              <div className="flex items-center gap-4">
-                <input
-                  type="number"
-                  value={newImageLimit}
-                  onChange={(e) => setNewImageLimit(Math.max(0, parseInt(e.target.value) || 0))}
-                  className="input-field flex-1"
-                  min="0"
-                />
-                <button
-                  onClick={handleUpdateImageLimit}
-                  disabled={saving || newImageLimit === user.image_limit}
-                  className="relative group overflow-hidden bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-medium px-6 py-2.5 rounded-xl transition-all duration-300 shadow-lg hover:shadow-emerald-500/25 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Save className="w-5 h-5" />
-                  <span>{saving ? 'Enregistrement...' : 'Enregistrer'}</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-300">
                 Droits administrateur
               </label>
               <button
@@ -154,33 +125,33 @@ function UserSettingsPopup({ user, onClose, onSuccess }: UserSettingsPopupProps)
 }
 
 export function AdminSettingsModal({ onClose }: AdminSettingsModalProps) {
-  const [activeTab, setActiveTab] = useState('stats');
   const [users, setUsers] = useState<UserStats[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [selectedUser, setSelectedUser] = useState<UserStats | null>(null);
-  const [totalStats, setTotalStats] = useState({
-    totalImages: 0,
-    totalTime: 0,
-    avgSuccessRate: 0,
-    avgProcessingTime: 0
-  });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupLimit, setNewGroupLimit] = useState(10000);
+  const [editingLimit, setEditingLimit] = useState<string | null>(null);
+  const [editingLimitValue, setEditingLimitValue] = useState(0);
+  const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState<'email' | 'processed' | 'success'>('email');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [activeTab, setActiveTab] = useState<'groups' | 'members'>('groups');
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
 
   useEffect(() => {
     loadUsers();
+    loadGroups();
   }, []);
 
   useEffect(() => {
-    // Calculate global statistics
-    const totalImages = users.reduce((sum, user) => sum + user.processed_images, 0);
-    const totalTime = users.reduce((sum, user) => sum + user.total_processing_time, 0);
-    const totalSuccess = users.reduce((sum, user) => sum + user.success_count, 0);
-    
-    setTotalStats({
-      totalImages,
-      totalTime,
-      avgSuccessRate: totalImages > 0 ? (totalSuccess / totalImages) * 100 : 0,
-      avgProcessingTime: totalImages > 0 ? totalTime / totalImages : 0
-    });
-  }, [users]);
+    if (selectedGroup) {
+      loadGroupMembers(selectedGroup.id);
+      loadGroupStats(selectedGroup.id);
+    }
+  }, [selectedGroup]);
 
   async function loadUsers() {
     try {
@@ -196,6 +167,138 @@ export function AdminSettingsModal({ onClose }: AdminSettingsModalProps) {
     }
   }
 
+  async function loadGroups() {
+    try {
+      const { data, error } = await supabase
+        .from('groups')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+
+      const groupsWithStats = await Promise.all(data.map(async (group) => {
+        const stats = await loadGroupStats(group.id);
+        return {
+          ...group,
+          ...stats
+        };
+      }));
+
+      setGroups(groupsWithStats);
+    } catch (err) {
+      console.error('Error loading groups:', err);
+    }
+  }
+
+  async function loadGroupMembers(groupId: string) {
+    try {
+      const { data: groupStats, error: statsError } = await supabase
+        .rpc('get_group_stats_with_users', { p_group_id: groupId });
+
+      if (statsError) throw statsError;
+
+      const userStats = groupStats.user_stats || [];
+      setGroupMembers(userStats);
+    } catch (err) {
+      console.error('Error loading group members:', err);
+    }
+  }
+
+  async function loadGroupStats(groupId: string) {
+    try {
+      const { data: stats, error } = await supabase
+        .rpc('get_group_stats', { p_group_id: groupId });
+
+      if (error) throw error;
+      return stats;
+    } catch (err) {
+      console.error('Error loading group stats:', err);
+      return null;
+    }
+  }
+
+  async function handleCreateGroup() {
+    if (!newGroupName || newGroupLimit < 0) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('groups')
+        .insert([{
+          name: newGroupName,
+          image_limit: newGroupLimit
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setGroups(prev => [...prev, { ...data, member_count: 0, total_processed: 0 }]);
+      setNewGroupName('');
+      setNewGroupLimit(10000);
+    } catch (err) {
+      console.error('Error creating group:', err);
+    }
+  }
+
+  async function handleUpdateLimit(groupId: string) {
+    try {
+      const { error } = await supabase
+        .from('groups')
+        .update({ image_limit: editingLimitValue })
+        .eq('id', groupId);
+
+      if (error) throw error;
+
+      setGroups(prev => prev.map(group => 
+        group.id === groupId 
+          ? { ...group, image_limit: editingLimitValue }
+          : group
+      ));
+
+      setEditingLimit(null);
+      await loadGroups();
+    } catch (err) {
+      console.error('Error updating limit:', err);
+    }
+  }
+
+  async function handleAddUserToGroup(userId: string) {
+    if (!selectedGroup) return;
+
+    try {
+      const { error } = await supabase
+        .from('group_members')
+        .insert([{
+          group_id: selectedGroup.id,
+          user_id: userId
+        }]);
+
+      if (error) throw error;
+
+      await loadGroupMembers(selectedGroup.id);
+    } catch (err) {
+      console.error('Error adding user to group:', err);
+    }
+  }
+
+  async function handleRemoveUserFromGroup(userId: string) {
+    if (!selectedGroup) return;
+
+    try {
+      const { error } = await supabase
+        .from('group_members')
+        .delete()
+        .eq('group_id', selectedGroup.id)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      await loadGroupMembers(selectedGroup.id);
+    } catch (err) {
+      console.error('Error removing user from group:', err);
+    }
+  }
+
   const formatTime = (seconds: number): string => {
     if (seconds < 60) return `${seconds.toFixed(1)}s`;
     const minutes = Math.floor(seconds / 60);
@@ -203,31 +306,40 @@ export function AdminSettingsModal({ onClose }: AdminSettingsModalProps) {
     return `${minutes}m ${remainingSeconds.toFixed(1)}s`;
   };
 
-  const formatLongTime = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-
-    const parts = [];
-    if (hours > 0) {
-      parts.push(`${hours}h`);
-    }
-    if (minutes > 0 || hours > 0) {
-      parts.push(`${minutes}m`);
-    }
-    if (remainingSeconds > 0 || (hours === 0 && minutes === 0)) {
-      parts.push(`${remainingSeconds}s`);
-    }
-
-    return parts.join(' ');
+  const toggleGroupExpanded = (groupId: string) => {
+    setExpandedGroups(prev => 
+      prev.includes(groupId)
+        ? prev.filter(id => id !== groupId)
+        : [...prev, groupId]
+    );
   };
 
+  const filteredUsers = users
+    .filter(user =>
+      user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortBy === 'email') {
+        return sortOrder === 'asc' 
+          ? a.email.localeCompare(b.email)
+          : b.email.localeCompare(a.email);
+      }
+      if (sortBy === 'processed') {
+        return sortOrder === 'asc'
+          ? a.processed_images - b.processed_images
+          : b.processed_images - a.processed_images;
+      }
+      // success rate
+      const aRate = a.processed_images > 0 ? (a.success_count / a.processed_images) * 100 : 0;
+      const bRate = b.processed_images > 0 ? (b.success_count / b.processed_images) * 100 : 0;
+      return sortOrder === 'asc' ? aRate - bRate : bRate - aRate;
+    });
+
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-200">
-      <div className={`bg-slate-900/95 backdrop-blur-sm rounded-xl shadow-2xl border border-gray-800/50 w-full animate-in slide-in-from-bottom-4 duration-300 max-h-[95vh] overflow-y-auto ${
-        activeTab === 'billing' ? 'max-w-[95vw]' : 'max-w-5xl'
-      }`}>
-        <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between sticky top-0 bg-slate-900/95 backdrop-blur-sm z-10">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-200">
+      <div className="bg-slate-900/95 backdrop-blur-sm rounded-xl shadow-2xl border border-gray-800/50 w-full max-w-6xl animate-in slide-in-from-bottom-4 duration-300">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-emerald-500/10 p-2 rounded-lg">
               <Shield className="w-5 h-5 text-emerald-500" />
@@ -238,29 +350,29 @@ export function AdminSettingsModal({ onClose }: AdminSettingsModalProps) {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setActiveTab('stats')}
+              onClick={() => setActiveTab('groups')}
               className={`px-4 py-2 rounded-lg transition-colors ${
-                activeTab === 'stats'
+                activeTab === 'groups'
                   ? 'bg-emerald-500/20 text-emerald-500'
                   : 'text-gray-400 hover:text-gray-300 hover:bg-white/5'
               }`}
             >
               <div className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" />
-                <span>Statistiques</span>
+                <LayoutGrid className="w-4 h-4" />
+                <span>Groupes</span>
               </div>
             </button>
             <button
-              onClick={() => setActiveTab('billing')}
+              onClick={() => setActiveTab('members')}
               className={`px-4 py-2 rounded-lg transition-colors ${
-                activeTab === 'billing'
+                activeTab === 'members'
                   ? 'bg-emerald-500/20 text-emerald-500'
                   : 'text-gray-400 hover:text-gray-300 hover:bg-white/5'
               }`}
             >
               <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                <span>Facturation</span>
+                <UserCog className="w-4 h-4" />
+                <span>Membres</span>
               </div>
             </button>
             <button onClick={onClose} className="btn-icon">
@@ -269,138 +381,447 @@ export function AdminSettingsModal({ onClose }: AdminSettingsModalProps) {
           </div>
         </div>
 
-        <div className="p-4 sm:p-6">
-          {activeTab === 'stats' ? (
-            <>
-              {/* Global Statistics */}
-              <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-slate-800/50 rounded-xl p-4 border border-gray-700/50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="w-4 h-4 text-emerald-500" />
-                    <h3 className="text-sm font-medium text-gray-400">Total images traitées</h3>
+        {/* Content */}
+        <div className="p-6">
+          {/* Search and Filters */}
+          <div className="flex items-center gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Rechercher un utilisateur..."
+                className="w-full bg-slate-800/50 border border-gray-700/50 rounded-xl pl-10 pr-4 py-2.5 text-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+              />
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`p-2.5 rounded-xl border transition-colors ${
+                showFilters
+                  ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-500'
+                  : 'border-gray-700/50 text-gray-400 hover:text-gray-300 hover:bg-slate-700/50'
+              }`}
+            >
+              <SlidersHorizontal className="w-5 h-5" />
+            </button>
+          </div>
+
+          {showFilters && (
+            <div className="p-4 bg-slate-800/50 rounded-xl border border-gray-700/50 space-y-4 mb-6">
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-emerald-500" />
+                <span className="text-sm font-medium text-gray-300">Trier par</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => {
+                    setSortBy('email');
+                    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                    sortBy === 'email'
+                      ? 'bg-emerald-500/20 text-emerald-500'
+                      : 'text-gray-400 hover:text-gray-300 hover:bg-slate-700/50'
+                  }`}
+                >
+                  Email {sortBy === 'email' && (sortOrder === 'asc' ? '↑' : '↓')}
+                </button>
+                <button
+                  onClick={() => {
+                    setSortBy('processed');
+                    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                    sortBy === 'processed'
+                      ? 'bg-emerald-500/20 text-emerald-500'
+                      : 'text-gray-400 hover:text-gray-300 hover:bg-slate-700/50'
+                  }`}
+                >
+                  Images traitées {sortBy === 'processed' && (sortOrder === 'asc' ? '↑' : '↓')}
+                </button>
+                <button
+                  onClick={() => {
+                    setSortBy('success');
+                    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                    sortBy === 'success'
+                      ? 'bg-emerald-500/20 text-emerald-500'
+                      : 'text-gray-400 hover:text-gray-300 hover:bg-slate-700/50'
+                  }`}
+                >
+                  Taux de réussite {sortBy === 'success' && (sortOrder === 'asc' ? '↑' : '↓')}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'groups' ? (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Groups List */}
+              <div className="lg:col-span-1 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium text-gray-200">Groupes</h3>
+                  <span className="text-sm text-gray-400">{groups.length} groupes</span>
+                </div>
+                
+                {/* Create Group Form */}
+                <div className="bg-slate-800/50 rounded-xl p-4 border border-gray-700/50 space-y-4">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-400">
+                      Nom du groupe
+                    </label>
+                    <input
+                      type="text"
+                      value={newGroupName}
+                      onChange={(e) => setNewGroupName(e.target.value)}
+                      placeholder="Ex: Marketing"
+                      className="w-full bg-slate-700/50 border border-gray-600/50 rounded-lg px-4 py-2 text-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    />
                   </div>
-                  <p className="text-2xl font-semibold text-emerald-500">{totalStats.totalImages}</p>
+
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-400">
+                      Limite d'images
+                    </label>
+                    <input
+                      type="number"
+                      value={newGroupLimit}
+                      onChange={(e) => setNewGroupLimit(parseInt(e.target.value) || 0)}
+                      placeholder="Ex: 10000"
+                      className="w-full bg-slate-700/50 border border-gray-600/50 rounded-lg px-4 py-2 text-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    />
+                  </div>
+
+                  <button
+                    onClick={handleCreateGroup}
+                    disabled={!newGroupName || newGroupLimit < 0}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    <span>Créer le groupe</span>
+                  </button>
                 </div>
 
-                <div className="bg-slate-800/50 rounded-xl p-4 border border-gray-700/50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Timer className="w-4 h-4 text-emerald-500" />
-                    <h3 className="text-sm font-medium text-gray-400">Temps total de traitement</h3>
-                  </div>
-                  <p className="text-2xl font-semibold text-emerald-500">{formatLongTime(totalStats.totalTime)}</p>
-                </div>
+                {/* Groups List */}
+                <div className="space-y-2">
+                  {groups.map(group => (
+                    <div
+                      key={group.id}
+                      className={`bg-slate-800/50 rounded-xl border transition-all duration-300 ${
+                        selectedGroup?.id === group.id
+                          ? 'border-emerald-500/50'
+                          : 'border-gray-700/50 hover:border-gray-600/50'
+                      }`}
+                    >
+                      <button
+                        onClick={() => setSelectedGroup(group)}
+                        className="w-full p-4 text-left"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4 text-emerald-500" />
+                            <span className="font-medium text-gray-200">{group.name}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-400">
+                              {group.member_count || 0} membres
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleGroupExpanded(group.id);
+                              }}
+                              className="p-1 text-gray-400 hover:text-gray-300 rounded transition-colors"
+                            >
+                              {expandedGroups.includes(group.id) ? (
+                                <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
 
-                <div className="bg-slate-800/50 rounded-xl p-4 border border-gray-700/50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <BarChart3 className="w-4 h-4 text-emerald-500" />
-                    <h3 className="text-sm font-medium text-gray-400">Taux de réussite moyen</h3>
-                  </div>
-                  <p className="text-2xl font-semibold text-emerald-500">{totalStats.avgSuccessRate.toFixed(1)}%</p>
-                </div>
+                        <div className="mt-2">
+                          <div className="h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-300"
+                              style={{ 
+                                width: `${Math.min(((group.total_processed || 0) / group.image_limit) * 100, 100)}%` 
+                              }}
+                            />
+                          </div>
+                          <div className="mt-1 text-sm text-gray-400">
+                            {group.total_processed || 0} / {group.image_limit} images
+                          </div>
+                        </div>
 
-                <div className="bg-slate-800/50 rounded-xl p-4 border border-gray-700/50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Clock className="w-4 h-4 text-emerald-500" />
-                    <h3 className="text-sm font-medium text-gray-400">Temps moyen par image</h3>
-                  </div>
-                  <p className="text-2xl font-semibold text-emerald-500">{formatTime(totalStats.avgProcessingTime)}</p>
+                        {expandedGroups.includes(group.id) && (
+                          <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                            <div className="flex items-center gap-1.5 text-gray-400">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                              <span>{group.stats?.success_rate?.toFixed(1)}% réussite</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-gray-400">
+                              <Timer className="w-3.5 h-3.5 text-emerald-500" />
+                              <span>{formatTime(group.stats?.avg_processing_time || 0)}</span>
+                            </div>
+                          </div>
+                        )}
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Users Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-800">
-                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Utilisateur</th>
-                      <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">
-                        <div className="flex items-center justify-end gap-2">
-                          <Sparkles className="w-4 h-4" />
-                          <span>Images traitées</span>
+              {/* Group Details & Members */}
+              <div className="lg:col-span-2">
+                {selectedGroup ? (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-emerald-500/10 p-2 rounded-lg">
+                          <Settings className="w-5 h-5 text-emerald-500" />
                         </div>
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">
-                        <div className="flex items-center justify-end gap-2">
-                          <BarChart3 className="w-4 h-4" />
-                          <span>Taux de réussite</span>
-                        </div>
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">
-                        <div className="flex items-center justify-end gap-2">
-                          <Clock className="w-4 h-4" />
-                          <span>Temps moyen</span>
-                        </div>
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">
-                        <div className="flex items-center justify-end gap-2">
-                          <Timer className="w-4 h-4" />
-                          <span>Temps total</span>
-                        </div>
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((user) => {
-                      const successRate = user.processed_images > 0
-                        ? Math.round((user.success_count / user.processed_images) * 100)
-                        : 0;
-                      const avgTime = user.processed_images > 0
-                        ? user.total_processing_time / user.processed_images
-                        : 0;
+                        <h3 className="text-lg font-medium text-gray-200">
+                          {selectedGroup.name}
+                        </h3>
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (confirm('Êtes-vous sûr de vouloir supprimer ce groupe ?')) {
+                            // Handle group deletion
+                          }
+                        }}
+                        className="text-red-500 hover:text-red-400 px-3 py-1 rounded-lg hover:bg-red-500/10 transition-colors flex items-center gap-2"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Supprimer</span>
+                      </button>
+                    </div>
 
-                      return (
-                        <tr key={user.id} className="border-b border-gray-800/50 hover:bg-slate-800/30">
-                          <td className="py-3 px-4">
+                    {/* Group Stats */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="bg-slate-800/50 rounded-xl p-4 border border-gray-700/50 hover:border-emerald-500/50 transition-all duration-300 group">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform duration-300" />
+                            <h4 className="text-sm font-medium text-gray-400">Limite d'images</h4>
+                          </div>
+                          {editingLimit === selectedGroup.id ? (
                             <div className="flex items-center gap-2">
-                              <span className="text-gray-300">{user.email}</span>
-                              {user.is_admin && (
-                                <span className="text-xs bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded">
-                                  Admin
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <span className="text-gray-300">{user.processed_images}</span>
-                            <span className="text-gray-500"> / </span>
-                            <span className="text-emerald-500">{user.image_limit}</span>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <span className={`${
-                              successRate >= 90 ? 'text-emerald-500' :
-                              successRate >= 70 ? 'text-yellow-500' :
-                              'text-red-500'
-                            }`}>
-                              {successRate}%
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-right text-gray-300">
-                            {formatTime(avgTime)}
-                          </td>
-                          <td className="py-3 px-4 text-right text-gray-300">
-                            {formatLongTime(user.total_processing_time)}
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
+                              <input
+                                type="number"
+                                value={editingLimitValue}
+                                onChange={(e) => setEditingLimitValue(parseInt(e.target.value) || 0)}
+                                className="w-24 bg-slate-700/50 border border-gray-600/50 rounded px-2 py-1 text-sm"
+                                min="0"
+                              />
                               <button
-                                onClick={() => setSelectedUser(user)}
-                                className="text-xs bg-slate-700 hover:bg-slate-600 text-gray-300 px-2 py-1 rounded-lg transition-colors"
+                                onClick={() => handleUpdateLimit(selectedGroup.id)}
+                                className="p-1 text-emerald-500 hover:text-emerald-400 rounded transition-colors"
                               >
-                                Modifier
+                                <Save className="w-4 h-4" />
                               </button>
                             </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setEditingLimit(selectedGroup.id);
+                                setEditingLimitValue(selectedGroup.image_limit);
+                              }}
+                              className="p-1 text-gray-400 hover:text-gray-300 rounded transition-colors"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-2xl font-semibold text-emerald-500">
+                          {selectedGroup.image_limit}
+                        </p>
+                      </div>
+
+                      <div className="bg-slate-800/50 rounded-xl p-4 border border-gray-700/50 hover:border-emerald-500/50 transition-all duration-300 group">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Timer className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform duration-300" />
+                          <h4 className="text-sm font-medium text-gray-400">Temps moyen</h4>
+                        </div>
+                        <p className="text-2xl font-semibold text-emerald-500">
+                          {formatTime(selectedGroup.stats?.avg_processing_time || 0)}
+                        </p>
+                      </div>
+
+                      <div className="bg-slate-800/50 rounded-xl p-4 border border-gray-700/50 hover:border-emerald-500/50 transition-all duration-300 group">
+                        <div className="flex items-center gap-2 mb-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform duration-300" />
+                          <h4 className="text-sm font-medium text-gray-400">Taux de réussite</h4>
+                        </div>
+                        <p className="text-2xl font-semibold text-emerald-500">
+                          {selectedGroup.stats?.success_rate?.toFixed(1) || 0}%
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Members List */}
+                    <div className="bg-slate-800/50 rounded-xl border border-gray-700/50 overflow-hidden">
+                      <div className="p-4 border-b border-gray-700/50">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-medium text-gray-400">
+                            Membres du groupe
+                          </h4>
+                          <span className="text-xs text-gray-500">
+                            {groupMembers.length} membres
+                          </span>
+                        </div>
+                      </div>
+                      <div className="divide-y divide-gray-700/50">
+                        {filteredUsers.map(user => {
+                          const isMember = groupMembers.some(m => m.user_id === user.user_id);
+                          return (
+                            <div
+                              key={user.id}
+                              className="p-4 hover:bg-slate-700/30 transition-colors"
+                            >
+                              
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-gray-300">{user.email}</span>
+                                  {user.is_admin && (
+                                    <span className="text-xs bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded">
+                                      Admin
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => setSelectedUser(user)}
+                                    className="text-gray-400 hover:text-gray-300 p-1 hover:bg-white/5 rounded transition-colors"
+                                  >
+                                    <Settings className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => isMember 
+                                      ? handleRemoveUserFromGroup(user.user_id)
+                                      : handleAddUserToGroup(user.user_id)
+                                    }
+                                    className={`p-1 rounded transition-colors ${
+                                      isMember
+                                        ? 'text-red-500 hover:text-red-400 hover:bg-red-500/10'
+                                        : 'text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10'
+                                    }`}
+                                  >
+                                    {isMember ? (
+                                      <UserMinus className="w-4 h-4" />
+                                    ) : (
+                                      <UserPlus className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-3 gap-4 text-sm">
+                                <div className="flex items-center gap-1.5 text-gray-400">
+                                  <BarChart3 className="w-3.5 h-3.5" />
+                                  <span>{user.processed_images}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-gray-400">
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  <span>
+                                    {user.processed_images > 0
+                                      ? ((user.success_count / user.processed_images) * 100).toFixed(1)
+                                      : '0.0'}%
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-gray-400">
+                                  <Timer className="w-3.5 h-3.5" />
+                                  <span>
+                                    {formatTime(
+                                      user.processed_images > 0
+                                        ? user.total_processing_time / user.processed_images
+                                        : 0
+                                    )}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full py-12 text-gray-400">
+                    <Settings className="w-12 h-12 mb-4 text-gray-500" />
+                    <p>Sélectionnez un groupe pour voir ses détails</p>
+                  </div>
+                )}
               </div>
-            </>
+            </div>
           ) : (
-            <div className="min-w-[800px]">
-              <BillingTab />
+            <div className="space-y-4">
+              {/* Members List */}
+              <div className="bg-slate-800/50 rounded-xl border border-gray-700/50">
+                <div className="p-4 border-b border-gray-700/50">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-medium text-gray-400">
+                      Tous les membres
+                    </h4>
+                    <span className="text-xs text-gray-500">
+                      {users.length} utilisateurs
+                    </span>
+                  </div>
+                </div>
+                <div className="divide-y divide-gray-700/50">
+                  {filteredUsers.map(user => (
+                    <div
+                      key={user.id}
+                      className="p-4 hover:bg-slate-700/30 transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <span className="text-gray-300">{user.email}</span>
+                          {user.is_admin && (
+                            <span className="text-xs bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded">
+                              Admin
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => setSelectedUser(user)}
+                          className="text-gray-400 hover:text-gray-300 p-1 hover:bg-white/5 rounded transition-colors"
+                        >
+                          <Settings className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div className="flex items-center gap-1.5 text-gray-400">
+                          <BarChart3 className="w-3.5 h-3.5" />
+                          <span>{user.processed_images}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-gray-400">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>
+                            {user.processed_images > 0
+                              ? ((user.success_count / user.processed_images) * 100).toFixed(1)
+                              : '0.0'}%
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-gray-400">
+                          <Timer className="w-3.5 h-3.5" />
+                          <span>
+                            {formatTime(
+                              user.processed_images > 0
+                                ? user.total_processing_time / user.processed_images
+                                : 0
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>

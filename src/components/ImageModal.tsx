@@ -1,12 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Download, Copy, ZoomIn, ZoomOut, RotateCcw, SplitSquareVertical } from 'lucide-react';
+import { X, Download, Copy, ZoomIn, ZoomOut, RotateCcw, SplitSquareVertical, Layers, Check } from 'lucide-react';
+import { removeBackground } from '../services/api';
 
 interface ImageModalProps {
   imageUrl: string;
   originalUrl?: string;
   onClose: () => void;
 }
+
+const models = [
+  { id: 'bria', name: 'Standard', description: 'Modèle général polyvalent' },
+  { id: 'mannequin', name: 'Mannequin', description: 'Optimisé pour les photos de mannequins' },
+  { id: 'packshot', name: 'Packshot', description: 'Optimisé pour les photos de vêtements sans mannequin' }
+];
 
 export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
@@ -20,6 +27,10 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
   const [modalSize, setModalSize] = useState({ width: 0, height: 0 });
   const [isMouseOverImage, setIsMouseOverImage] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('bria');
+  const [showModelSelector, setShowModelSelector] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processedImageUrl, setProcessedImageUrl] = useState<string | null>(null);
   const [portalContainer] = useState(() => {
     const el = document.createElement('div');
     el.setAttribute('id', 'modal-root');
@@ -41,25 +52,21 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
 
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
-      const padding = 32; // 16px padding on each side
+      const padding = 32;
       const maxModalWidth = viewportWidth - (padding * 2);
       const maxModalHeight = viewportHeight - (padding * 2);
-      const toolbarHeight = 116; // Header + toolbar + footer
+      const toolbarHeight = 116;
 
-      // Calculate available space for the image
       const availableWidth = maxModalWidth;
       const availableHeight = maxModalHeight - toolbarHeight;
 
-      // Calculate scale to fit the image within available space
       const scaleX = availableWidth / imageSize.width;
       const scaleY = availableHeight / imageSize.height;
       const initialScale = Math.min(scaleX, scaleY, 1);
 
-      // Calculate final modal dimensions
       let finalWidth = Math.min(imageSize.width * initialScale, maxModalWidth);
       let finalHeight = (imageSize.height * initialScale) + toolbarHeight;
 
-      // Ensure minimum dimensions
       finalWidth = Math.max(finalWidth, 320);
       finalHeight = Math.max(finalHeight, 240);
 
@@ -70,7 +77,6 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
 
     updateModalSize();
 
-    // Update modal size when window is resized
     window.addEventListener('resize', updateModalSize);
     return () => window.removeEventListener('resize', updateModalSize);
   }, [imageSize]);
@@ -83,16 +89,15 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
     img.src = imageUrl;
   }, [imageUrl]);
 
-  // Reset view when switching between original and processed image
   useEffect(() => {
-    const currentImage = showOriginal && originalUrl ? originalUrl : imageUrl;
+    const currentImage = showOriginal ? imageUrl : (processedImageUrl || imageUrl);
     const img = new Image();
     img.onload = () => {
       setImageSize({ width: img.width, height: img.height });
       resetView();
     };
     img.src = currentImage;
-  }, [showOriginal, imageUrl, originalUrl]);
+  }, [showOriginal, imageUrl, processedImageUrl]);
 
   const centerImage = () => {
     if (!containerRef.current || !imageRef.current) return;
@@ -189,7 +194,7 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
 
   const copyToClipboard = async () => {
     try {
-      const response = await fetch(imageUrl);
+      const response = await fetch(showOriginal ? imageUrl : (processedImageUrl || imageUrl));
       const blob = await response.blob();
       await navigator.clipboard.write([
         new ClipboardItem({ [blob.type]: blob })
@@ -201,7 +206,7 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
 
   const downloadImage = () => {
     const a = document.createElement('a');
-    a.href = imageUrl;
+    a.href = showOriginal ? imageUrl : (processedImageUrl || imageUrl);
     a.download = 'image.png';
     document.body.appendChild(a);
     a.click();
@@ -220,9 +225,28 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
     centerImage();
   };
 
-  const currentImage = showOriginal && originalUrl ? originalUrl : imageUrl;
+  const handleModelSelect = async (modelId: string) => {
+    setSelectedModel(modelId);
+    setShowModelSelector(false);
+    setIsProcessing(true);
 
-  const modalContent = (
+    try {
+      // Convert image URL to File object
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const file = new File([blob], 'image.png', { type: blob.type });
+
+      // Process image with selected model
+      const result = await removeBackground(file, modelId);
+      setProcessedImageUrl(result);
+    } catch (error) {
+      console.error('Error processing image:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return createPortal(
     <div
       ref={modalRef}
       className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-8"
@@ -255,61 +279,96 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
 
         {/* Toolbar */}
         <div className="bg-slate-800/60 backdrop-blur-sm border-b border-gray-700/50 px-4 py-2 flex items-center gap-2 sticky top-0 z-10">
-          <button
-            onClick={() => setScale(s => Math.max(0.1, s - 0.1))}
-            className="btn-icon"
-            title="Zoom arrière"
-          >
-            <ZoomOut className="w-4 h-4" />
-          </button>
-          <button
-            onClick={resetView}
-            className="px-2 py-1 text-sm text-gray-300 hover:bg-gray-700/50 rounded"
-            title="Réinitialiser le zoom"
-          >
-            {Math.round(scale * 100)}%
-          </button>
-          <button
-            onClick={() => setScale(s => Math.min(5, s + 0.1))}
-            className="btn-icon"
-            title="Zoom avant"
-          >
-            <ZoomIn className="w-4 h-4" />
-          </button>
-          <div className="w-px h-4 bg-gray-700/50" />
-          <button
-            onClick={resetView}
-            className="btn-icon"
-            title="Réinitialiser la vue"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
-          {originalUrl && (
-            <>
-              <div className="w-px h-4 bg-gray-700/50" />
-              <button
-                onClick={() => setShowOriginal(!showOriginal)}
-                className={`btn-icon ${showOriginal ? 'bg-emerald-500/10 text-emerald-500' : ''}`}
-                title={showOriginal ? "Voir le résultat" : "Voir l'original"}
-              >
-                <SplitSquareVertical className="w-4 h-4" />
-              </button>
-            </>
-          )}
-          <button
-            onClick={copyToClipboard}
-            className="btn-icon"
-            title="Copier l'image"
-          >
-            <Copy className="w-4 h-4" />
-          </button>
-          <button
-            onClick={downloadImage}
-            className="btn-icon"
-            title="Télécharger l'image"
-          >
-            <Download className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2 border-r border-gray-700/50 pr-2">
+            <button
+              onClick={() => setScale(s => Math.max(0.1, s - 0.1))}
+              className="btn-icon"
+              title="Zoom arrière"
+            >
+              <ZoomOut className="w-4 h-4" />
+            </button>
+            <button
+              onClick={resetView}
+              className="px-2 py-1 text-sm text-gray-300 hover:bg-gray-700/50 rounded"
+              title="Réinitialiser le zoom"
+            >
+              {Math.round(scale * 100)}%
+            </button>
+            <button
+              onClick={() => setScale(s => Math.min(5, s + 0.1))}
+              className="btn-icon"
+              title="Zoom avant"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 border-r border-gray-700/50 pr-2">
+            <button
+              onClick={resetView}
+              className="btn-icon"
+              title="Réinitialiser la vue"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 border-r border-gray-700/50 pr-2">
+            <button
+              onClick={() => setShowOriginal(!showOriginal)}
+              className={`btn-icon ${showOriginal ? 'bg-emerald-500/10 text-emerald-500' : ''}`}
+              title={showOriginal ? "Voir le résultat" : "Voir l'original"}
+            >
+              <SplitSquareVertical className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="relative flex items-center gap-2 border-r border-gray-700/50 pr-2">
+            <button
+              onClick={() => setShowModelSelector(!showModelSelector)}
+              className={`btn-icon ${showModelSelector ? 'bg-emerald-500/10 text-emerald-500' : ''}`}
+              title="Changer de modèle"
+            >
+              <Layers className="w-4 h-4" />
+            </button>
+
+            {showModelSelector && (
+              <div className="absolute top-full left-0 mt-2 w-64 bg-slate-800 rounded-lg shadow-xl border border-gray-700/50 p-2 space-y-1">
+                {models.map((model) => (
+                  <button
+                    key={model.id}
+                    onClick={() => handleModelSelect(model.id)}
+                    className={`w-full px-3 py-2 text-left rounded-lg hover:bg-slate-700/50 flex items-center gap-2 ${
+                      selectedModel === model.id ? 'bg-emerald-500/10 text-emerald-500' : 'text-gray-300'
+                    }`}
+                  >
+                    {selectedModel === model.id && <Check className="w-4 h-4 flex-shrink-0" />}
+                    <div className="flex-1">
+                      <div className="font-medium">{model.name}</div>
+                      <div className="text-xs text-gray-400">{model.description}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={copyToClipboard}
+              className="btn-icon"
+              title="Copier l'image"
+            >
+              <Copy className="w-4 h-4" />
+            </button>
+            <button
+              onClick={downloadImage}
+              className="btn-icon"
+              title="Télécharger l'image"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Image Container */}
@@ -326,18 +385,24 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
           }}
           onMouseEnter={() => setIsMouseOverImage(true)}
         >
-          <img
-            ref={imageRef}
-            src={currentImage}
-            alt="Preview"
-            className={`max-w-none select-none absolute ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-            style={{
-              transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-              transition: isDragging ? 'none' : 'transform 0.2s ease-out',
-              transformOrigin: '0 0'
-            }}
-            draggable={false}
-          />
+          {isProcessing ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+              <div className="text-white">Traitement en cours...</div>
+            </div>
+          ) : (
+            <img
+              ref={imageRef}
+              src={showOriginal ? imageUrl : (processedImageUrl || imageUrl)}
+              alt="Preview"
+              className={`max-w-none select-none absolute ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+              style={{
+                transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+                transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+                transformOrigin: '0 0'
+              }}
+              draggable={false}
+            />
+          )}
         </div>
 
         {/* Instructions */}
@@ -345,8 +410,7 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
           <p>Échap pour fermer</p>
         </div>
       </div>
-    </div>
+    </div>,
+    portalContainer
   );
-
-  return createPortal(modalContent, portalContainer);
 }

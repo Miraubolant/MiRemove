@@ -31,7 +31,6 @@ export function Header({ onShowGuide }: HeaderProps) {
       setIsAtTop(newIsAtTop);
       setHasScrolled(true);
 
-      // Réinitialiser hasScrolled si on revient en haut sans mouvement de scroll
       if (newIsAtTop && wasAtTop) {
         setHasScrolled(false);
       }
@@ -43,19 +42,25 @@ export function Header({ onShowGuide }: HeaderProps) {
 
   useEffect(() => {
     async function checkAdminStatus() {
-      if (!user) return;
+      if (!user) {
+        setIsAdmin(false);
+        return;
+      }
 
       try {
+        // Get all user stats rows for this user
         const { data: userStats, error } = await supabase
           .from('user_stats')
           .select('is_admin')
-          .eq('user_id', user.id)
-          .single();
+          .eq('user_id', user.id);
 
         if (error) throw error;
-        setIsAdmin(userStats?.is_admin || false);
+
+        // Check if any of the rows have is_admin set to true
+        setIsAdmin(userStats?.some(stat => stat.is_admin) || false);
       } catch (error) {
         console.error('Error checking admin status:', error);
+        setIsAdmin(false);
       }
     }
 
@@ -70,23 +75,19 @@ export function Header({ onShowGuide }: HeaderProps) {
             {/* Logo et titre */}
             <div className="flex items-center gap-3 group">
               <div className="relative transform group-hover:scale-110 transition-transform duration-500">
-                {/* Effet de lueur derrière le logo */}
                 <div 
                   className={`absolute inset-0 bg-emerald-500/20 rounded-lg blur-2xl transition-all duration-500 ${
                     isAtTop && hasScrolled ? 'opacity-100 scale-125' : 'opacity-0 scale-100'
                   }`}
                 />
                 
-                {/* Conteneur du logo avec effets */}
                 <div className="relative bg-gradient-to-br from-emerald-500 to-emerald-600 p-2.5 sm:p-3.5 rounded-lg shadow-lg overflow-hidden">
-                  {/* Icône avec rotation */}
                   <Wand2 
                     className={`w-6 h-6 sm:w-8 sm:h-8 text-white transform transition-all duration-500 ${
                       isAtTop && hasScrolled ? '-rotate-45 scale-110' : 'rotate-0 scale-100'
                     }`}
                   />
                   
-                  {/* Effet de brillance */}
                   <div 
                     className={`absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 ${
                       isAtTop && hasScrolled ? '-translate-x-full' : 'translate-x-full'
@@ -95,7 +96,6 @@ export function Header({ onShowGuide }: HeaderProps) {
                 </div>
               </div>
 
-              {/* Titre et sous-titre avec nouveau style */}
               <div>
                 <div className="relative group">
                   <h3 className="text-2xl sm:text-3xl tracking-tight">
@@ -106,7 +106,6 @@ export function Header({ onShowGuide }: HeaderProps) {
                   <p className="text-xs sm:text-sm text-gray-400 mt-0.5">
                     Supprimez l'arrière-plan de vos images en quelques clics
                   </p>
-                  {/* Ligne de soulignement améliorée */}
                   <div className="absolute -bottom-1 left-0 w-full h-0.5 overflow-hidden">
                     <div 
                       className={`w-full h-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-500 transform origin-left transition-transform duration-500 ${

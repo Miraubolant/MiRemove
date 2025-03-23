@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ImageIcon, Download, PaintBucket, Clock } from 'lucide-react';
+import { ImageIcon, Download, PaintBucket, Clock, Trash2 } from 'lucide-react';
 import { AuthModal } from './AuthModal';
 import { useAuthStore } from '../stores/authStore';
 import { ProgressBar } from './ProgressBar';
@@ -11,6 +11,7 @@ interface ModelSelectorProps {
   hasCompletedFiles?: boolean;
   onDownloadAllJpg?: () => void;
   onApplyWhiteBackground?: () => void;
+  onDeleteAll?: () => void;
   hasWhiteBackground?: boolean;
   isProcessing?: boolean;
   totalToProcess?: number;
@@ -24,6 +25,7 @@ export function ModelSelector({
   hasCompletedFiles = true,
   onDownloadAllJpg,
   onApplyWhiteBackground,
+  onDeleteAll,
   hasWhiteBackground,
   isProcessing,
   totalToProcess = 0,
@@ -90,6 +92,20 @@ export function ModelSelector({
             title="Tout télécharger en JPG"
           >
             <Download className="w-5 h-5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={onDeleteAll}
+            disabled={!hasCompletedFiles && !hasPendingFiles}
+            className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${
+              hasCompletedFiles || hasPendingFiles
+                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600'
+                : 'bg-slate-700 opacity-50 cursor-not-allowed hover:scale-100'
+            }`}
+            title="Supprimer toutes les photos"
+          >
+            <Trash2 className="w-5 h-5" />
           </button>
 
           <button

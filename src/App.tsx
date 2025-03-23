@@ -20,7 +20,6 @@ import { loadImagesMetadata } from './services/imageService';
 import { Privacy } from './pages/Privacy';
 import { Terms } from './pages/Terms';
 import { GDPR } from './pages/GDPR';
-import { GroupLimitModal } from './components/GroupLimitModal';
 import type { ImageFile } from './types';
 import JSZip from 'jszip';
 
@@ -37,8 +36,6 @@ function MainApp() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [isImageLimit, setIsImageLimit] = useState(false);
-  const [showGroupLimitModal, setShowGroupLimitModal] = useState(false);
-  const [groupLimitMessage, setGroupLimitMessage] = useState('');
   const { incrementCount, canProcess, remainingProcesses } = useUsageStore();
   const { user } = useAuthStore();
   const { settings } = useAdminSettingsStore();
@@ -96,15 +93,7 @@ function MainApp() {
           setIsImageLimit(true);
         }
         setShowLimitModal(true);
-        return;
       }
-    }
-
-    // Check group limit
-    const groupCheck = await useUsageStore.getState().checkGroupLimit();
-    if (!groupCheck.canProcess) {
-      setGroupLimitMessage(groupCheck.message || 'Limite de groupe atteinte');
-      setShowGroupLimitModal(true);
       return;
     }
 
@@ -241,6 +230,18 @@ function MainApp() {
     setSelectedFiles(prev => prev.filter(f => f.id !== id));
   };
 
+  const handleDeleteAll = () => {
+    // Clean up object URLs
+    selectedFiles.forEach(file => {
+      URL.revokeObjectURL(file.preview);
+      if (file.result) {
+        URL.revokeObjectURL(file.result);
+      }
+    });
+    // Clear all files
+    setSelectedFiles([]);
+  };
+
   const handleBackgroundColorChange = (id: string, color: string) => {
     setSelectedFiles(prev =>
       prev.map(f => f.id === id ? { ...f, backgroundColor: color } : f)
@@ -273,6 +274,7 @@ function MainApp() {
             hasCompletedFiles={hasCompletedFiles}
             onDownloadAllJpg={downloadAllAsJpg}
             onApplyWhiteBackground={toggleWhiteBackground}
+            onDeleteAll={handleDeleteAll}
             hasWhiteBackground={hasWhiteBackground}
             isProcessing={processingBatch}
             totalToProcess={totalToProcess}
@@ -324,13 +326,6 @@ function MainApp() {
       {showGuideModal && (
         <QuickGuideModal
           onClose={() => setShowGuideModal(false)}
-        />
-      )}
-
-      {showGroupLimitModal && (
-        <GroupLimitModal
-          onClose={() => setShowGroupLimitModal(false)}
-          message={groupLimitMessage}
         />
       )}
 

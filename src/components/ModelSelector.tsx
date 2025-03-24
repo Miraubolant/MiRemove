@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ImageIcon, Download, PaintBucket, Clock, Trash2, Ruler } from 'lucide-react';
+import { ImageIcon, Download, PaintBucket, Clock, Trash2, Ruler, X } from 'lucide-react';
 import { AuthModal } from './AuthModal';
 import { useAuthStore } from '../stores/authStore';
 import { ProgressBar } from './ProgressBar';
@@ -177,7 +177,7 @@ export function ModelSelector({
                   onClick={() => setShowDimensionsModal(false)}
                   className="text-gray-400 hover:text-gray-300"
                 >
-                  <Trash2 className="w-5 h-5" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 

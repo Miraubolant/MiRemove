@@ -6,56 +6,99 @@ import { useUsageStore } from './usageStore';
 interface AuthState {
   user: User | null;
   loading: boolean;
+  error: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   setUser: (user: User | null) => void;
+  clearError: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   loading: true,
+  error: null,
   signIn: async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) throw error;
+    try {
+      set({ loading: true, error: null });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        // Translate error messages to French
+        let errorMessage = "Une erreur est survenue lors de la connexion";
+        if (error.message === "Invalid login credentials") {
+          errorMessage = "Email ou mot de passe incorrect";
+        }
+        throw new Error(errorMessage);
+      }
+
+      set({ user: data.user, error: null });
+      useUsageStore.getState().setAuthenticated(true);
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : "Une erreur est survenue" });
+      throw err;
+    } finally {
+      set({ loading: false });
+    }
   },
   signUp: async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`
+    try {
+      set({ loading: true, error: null });
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
+      
+      if (error) {
+        // Translate error messages to French
+        let errorMessage = "Une erreur est survenue lors de l'inscription";
+        if (error.message.includes("already registered")) {
+          errorMessage = "Cet email est déjà utilisé";
+        }
+        throw new Error(errorMessage);
       }
-    });
-    if (error) throw error;
+
+      set({ user: data.user, error: null });
+      useUsageStore.getState().setAuthenticated(true);
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : "Une erreur est survenue" });
+      throw err;
+    } finally {
+      set({ loading: false });
+    }
   },
   signOut: async () => {
     try {
+      set({ loading: true, error: null });
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
-      set({ user: null });
+      set({ user: null, error: null });
       useUsageStore.getState().setAuthenticated(false);
       
       // Clear any stored session data
       localStorage.removeItem('supabase.auth.token');
-      
-      // Optional: Refresh the page to clear all state
-      window.location.reload();
     } catch (err) {
       console.error('Error signing out:', err);
+      set({ error: "Une erreur est survenue lors de la déconnexion" });
       // Still clear local state even if API call fails
       set({ user: null });
       useUsageStore.getState().setAuthenticated(false);
+    } finally {
+      set({ loading: false });
     }
   },
   setUser: (user) => {
     set({ user, loading: false });
     useUsageStore.getState().setAuthenticated(!!user);
   },
+  clearError: () => set({ error: null })
 }));
 
 // Initialize auth state

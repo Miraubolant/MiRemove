@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Wand2, BarChart3, LogIn, MailQuestion as QuestionMark, Shield } from 'lucide-react';
 import { StatsModal } from './StatsModal';
 import { AuthModal } from './AuthModal';
-import { AdminSettingsModal } from './AdminSettingsModal';
+import { AdminSettingsModal } from './admin/AdminSettingsModal';
 import { UserMenu } from './UserMenu';
 import { useStats } from '../contexts/StatsContext';
 import { useAuthStore } from '../stores/authStore';
@@ -48,16 +48,14 @@ export function Header({ onShowGuide }: HeaderProps) {
       }
 
       try {
-        // Get all user stats rows for this user
         const { data: userStats, error } = await supabase
           .from('user_stats')
           .select('is_admin')
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .single();
 
         if (error) throw error;
-
-        // Check if any of the rows have is_admin set to true
-        setIsAdmin(userStats?.some(stat => stat.is_admin) || false);
+        setIsAdmin(userStats?.is_admin || false);
       } catch (error) {
         console.error('Error checking admin status:', error);
         setIsAdmin(false);

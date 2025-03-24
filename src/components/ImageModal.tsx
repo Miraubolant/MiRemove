@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Download, Copy, ZoomIn, ZoomOut, RotateCcw, SplitSquareVertical, Layers, Check } from 'lucide-react';
+import { X, Download, Copy, ZoomIn, ZoomOut, RotateCcw, SplitSquareVertical, Layers, Check, FileImage } from 'lucide-react';
 import { removeBackground } from '../services/api';
 
 interface ImageModalProps {
@@ -9,11 +9,18 @@ interface ImageModalProps {
   onClose: () => void;
 }
 
+interface ExportSettings {
+  format: 'png' | 'jpg';
+}
+
 const models = [
   { id: 'bria', name: 'Standard', description: 'Modèle général polyvalent' },
   { id: 'mannequin', name: 'Mannequin', description: 'Optimisé pour les photos de mannequins' },
   { id: 'packshot', name: 'Packshot', description: 'Optimisé pour les photos de vêtements sans mannequin' }
 ];
+
+const DEFAULT_MODAL_WIDTH = 1600;
+const DEFAULT_MODAL_HEIGHT = 900;
 
 export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
@@ -24,13 +31,14 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
-  const [modalSize, setModalSize] = useState({ width: 0, height: 0 });
+  const [modalSize, setModalSize] = useState({ width: DEFAULT_MODAL_WIDTH, height: DEFAULT_MODAL_HEIGHT });
   const [isMouseOverImage, setIsMouseOverImage] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
   const [selectedModel, setSelectedModel] = useState('bria');
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedImageUrl, setProcessedImageUrl] = useState<string | null>(null);
+  const [exportFormat, setExportFormat] = useState<'png' | 'jpg'>('png');
   const [portalContainer] = useState(() => {
     const el = document.createElement('div');
     el.setAttribute('id', 'modal-root');
@@ -53,9 +61,9 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
       const padding = 32;
-      const maxModalWidth = viewportWidth - (padding * 2);
-      const maxModalHeight = viewportHeight - (padding * 2);
-      const toolbarHeight = 116;
+      const maxModalWidth = Math.min(DEFAULT_MODAL_WIDTH, viewportWidth - (padding * 2));
+      const maxModalHeight = Math.min(DEFAULT_MODAL_HEIGHT, viewportHeight - (padding * 2));
+      const toolbarHeight = 120;
 
       const availableWidth = maxModalWidth;
       const availableHeight = maxModalHeight - toolbarHeight;
@@ -67,8 +75,8 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
       let finalWidth = Math.min(imageSize.width * initialScale, maxModalWidth);
       let finalHeight = (imageSize.height * initialScale) + toolbarHeight;
 
-      finalWidth = Math.max(finalWidth, 320);
-      finalHeight = Math.max(finalHeight, 240);
+      finalWidth = Math.max(finalWidth, 800);
+      finalHeight = Math.max(finalHeight, 600);
 
       setModalSize({ width: finalWidth, height: finalHeight });
       setScale(initialScale);
@@ -204,13 +212,40 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
     }
   };
 
-  const downloadImage = () => {
+  const downloadImage = async () => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx || !imageRef.current) return;
+
+    const img = imageRef.current;
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+
+    // Toujours ajouter un fond blanc pour JPG
+    if (exportFormat === 'jpg') {
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    ctx.drawImage(img, 0, 0);
+
+    const mimeType = `image/${exportFormat}`;
+    const blob = await new Promise<Blob>((resolve) => {
+      canvas.toBlob(
+        (b) => resolve(b!),
+        mimeType,
+        0.9
+      );
+    });
+
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = showOriginal ? imageUrl : (processedImageUrl || imageUrl);
-    a.download = 'image.png';
+    a.href = url;
+    a.download = `image.${exportFormat}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const resetView = () => {
@@ -231,12 +266,10 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
     setIsProcessing(true);
 
     try {
-      // Convert image URL to File object
       const response = await fetch(imageUrl);
       const blob = await response.blob();
       const file = new File([blob], 'image.png', { type: blob.type });
 
-      // Process image with selected model
       const result = await removeBackground(file, modelId);
       setProcessedImageUrl(result);
     } catch (error) {
@@ -253,17 +286,19 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
       onClick={handleBackgroundClick}
     >
       <div 
-        className="bg-slate-900/95 backdrop-blur-sm rounded-lg shadow-2xl border border-gray-800/50 flex flex-col max-w-[95vw] max-h-[95vh]"
+        className="bg-slate-900/95 backdrop-blur-sm rounded-lg shadow-2xl border border-gray-800/50 flex flex-col"
         style={{
-          width: modalSize.width || 'auto',
-          height: modalSize.height || 'auto'
+          width: modalSize.width,
+          height: modalSize.height,
+          maxWidth: '95vw',
+          maxHeight: '95vh'
         }}
       >
         {/* Header */}
-        <div className="bg-slate-800/80 backdrop-blur-sm px-4 py-2 flex items-center justify-between rounded-t-lg border-b border-gray-700/50">
+        <div className="bg-slate-800/80 backdrop-blur-sm px-4 py-3 flex items-center justify-between rounded-t-lg border-b border-gray-700/50">
           <div className="flex items-center gap-2">
-            <div className="bg-emerald-500/10 p-1.5 rounded">
-              <img src={imageUrl} className="w-4 h-4 object-cover rounded" alt="thumbnail" />
+            <div className="bg-emerald-500/10 p-2 rounded">
+              <img src={imageUrl} className="w-5 h-5 object-cover rounded" alt="thumbnail" />
             </div>
             <span className="text-sm text-gray-300">
               {imageSize.width} × {imageSize.height}px
@@ -271,103 +306,141 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded"
+            className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Toolbar */}
-        <div className="bg-slate-800/60 backdrop-blur-sm border-b border-gray-700/50 px-4 py-2 flex items-center gap-2 sticky top-0 z-10">
-          <div className="flex items-center gap-2 border-r border-gray-700/50 pr-2">
-            <button
-              onClick={() => setScale(s => Math.max(0.1, s - 0.1))}
-              className="btn-icon"
-              title="Zoom arrière"
-            >
-              <ZoomOut className="w-4 h-4" />
-            </button>
-            <button
-              onClick={resetView}
-              className="px-2 py-1 text-sm text-gray-300 hover:bg-gray-700/50 rounded"
-              title="Réinitialiser le zoom"
-            >
-              {Math.round(scale * 100)}%
-            </button>
-            <button
-              onClick={() => setScale(s => Math.min(5, s + 0.1))}
-              className="btn-icon"
-              title="Zoom avant"
-            >
-              <ZoomIn className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2 border-r border-gray-700/50 pr-2">
-            <button
-              onClick={resetView}
-              className="btn-icon"
-              title="Réinitialiser la vue"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2 border-r border-gray-700/50 pr-2">
-            <button
-              onClick={() => setShowOriginal(!showOriginal)}
-              className={`btn-icon ${showOriginal ? 'bg-emerald-500/10 text-emerald-500' : ''}`}
-              title={showOriginal ? "Voir le résultat" : "Voir l'original"}
-            >
-              <SplitSquareVertical className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="relative flex items-center gap-2 border-r border-gray-700/50 pr-2">
-            <button
-              onClick={() => setShowModelSelector(!showModelSelector)}
-              className={`btn-icon ${showModelSelector ? 'bg-emerald-500/10 text-emerald-500' : ''}`}
-              title="Changer de modèle"
-            >
-              <Layers className="w-4 h-4" />
-            </button>
-
-            {showModelSelector && (
-              <div className="absolute top-full left-0 mt-2 w-64 bg-slate-800 rounded-lg shadow-xl border border-gray-700/50 p-2 space-y-1">
-                {models.map((model) => (
-                  <button
-                    key={model.id}
-                    onClick={() => handleModelSelect(model.id)}
-                    className={`w-full px-3 py-2 text-left rounded-lg hover:bg-slate-700/50 flex items-center gap-2 ${
-                      selectedModel === model.id ? 'bg-emerald-500/10 text-emerald-500' : 'text-gray-300'
-                    }`}
-                  >
-                    {selectedModel === model.id && <Check className="w-4 h-4 flex-shrink-0" />}
-                    <div className="flex-1">
-                      <div className="font-medium">{model.name}</div>
-                      <div className="text-xs text-gray-400">{model.description}</div>
-                    </div>
-                  </button>
-                ))}
+        <div className="bg-slate-800/60 backdrop-blur-sm border-b border-gray-700/50 p-4 sticky top-0 z-10">
+          <div className="flex flex-col gap-4">
+            {/* Top row */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 border-r border-gray-700/50 pr-4">
+                <button
+                  onClick={() => setScale(s => Math.max(0.1, s - 0.1))}
+                  className="btn-icon"
+                  title="Zoom arrière"
+                >
+                  <ZoomOut className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={resetView}
+                  className="px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-700/50 rounded"
+                  title="Réinitialiser le zoom"
+                >
+                  {Math.round(scale * 100)}%
+                </button>
+                <button
+                  onClick={() => setScale(s => Math.min(5, s + 0.1))}
+                  className="btn-icon"
+                  title="Zoom avant"
+                >
+                  <ZoomIn className="w-5 h-5" />
+                </button>
               </div>
-            )}
-          </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={copyToClipboard}
-              className="btn-icon"
-              title="Copier l'image"
-            >
-              <Copy className="w-4 h-4" />
-            </button>
-            <button
-              onClick={downloadImage}
-              className="btn-icon"
-              title="Télécharger l'image"
-            >
-              <Download className="w-4 h-4" />
-            </button>
+              <div className="flex items-center gap-2 border-r border-gray-700/50 pr-4">
+                <button
+                  onClick={resetView}
+                  className="btn-icon"
+                  title="Réinitialiser la vue"
+                >
+                  <RotateCcw className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 border-r border-gray-700/50 pr-4">
+                <button
+                  onClick={() => setShowOriginal(!showOriginal)}
+                  className={`btn-icon ${showOriginal ? 'bg-emerald-500/10 text-emerald-500' : ''}`}
+                  title={showOriginal ? "Voir le résultat" : "Voir l'original"}
+                >
+                  <SplitSquareVertical className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="relative flex items-center gap-2 border-r border-gray-700/50 pr-4">
+                <button
+                  onClick={() => setShowModelSelector(!showModelSelector)}
+                  className={`btn-icon ${showModelSelector ? 'bg-emerald-500/10 text-emerald-500' : ''}`}
+                  title="Changer de modèle"
+                >
+                  <Layers className="w-5 h-5" />
+                </button>
+
+                {showModelSelector && (
+                  <div className="absolute top-full left-0 mt-2 w-64 bg-slate-800 rounded-lg shadow-xl border border-gray-700/50 p-2 space-y-1">
+                    {models.map((model) => (
+                      <button
+                        key={model.id}
+                        onClick={() => handleModelSelect(model.id)}
+                        className={`w-full px-3 py-2 text-left rounded-lg hover:bg-slate-700/50 flex items-center gap-2 ${
+                          selectedModel === model.id ? 'bg-emerald-500/10 text-emerald-500' : 'text-gray-300'
+                        }`}
+                      >
+                        {selectedModel === model.id && <Check className="w-4 h-4 flex-shrink-0" />}
+                        <div className="flex-1">
+                          <div className="font-medium">{model.name}</div>
+                          <div className="text-xs text-gray-400">{model.description}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={copyToClipboard}
+                  className="btn-icon"
+                  title="Copier l'image"
+                >
+                  <Copy className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={downloadImage}
+                  className="btn-icon"
+                  title="Télécharger l'image"
+                >
+                  <Download className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Bottom row - Format selection */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <FileImage className="w-5 h-5 text-emerald-500" />
+                <span className="text-sm text-gray-300">Format d'export :</span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setExportFormat('png')}
+                  className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
+                    exportFormat === 'png'
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
+                  }`}
+                >
+                  PNG
+                </button>
+                <button
+                  onClick={() => setExportFormat('jpg')}
+                  className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
+                    exportFormat === 'jpg'
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
+                  }`}
+                >
+                  JPG
+                </button>
+              </div>
+              <span className="text-sm text-gray-400">
+                {exportFormat === 'jpg' ? '(avec fond blanc)' : '(avec transparence)'}
+              </span>
+            </div>
           </div>
         </div>
 

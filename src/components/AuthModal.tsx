@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Mail, Lock, Loader2, ArrowRight, UserPlus, LogIn, Wand2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Mail, Lock, Loader2, ArrowRight, UserPlus, LogIn, Wand2 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 
 interface AuthModalProps {
@@ -11,13 +11,15 @@ export function AuthModal({ onClose }: AuthModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  const { signIn, signUp } = useAuthStore();
+  const { signIn, signUp, error: authError, clearError } = useAuthStore();
+
+  // Clear error when modal closes or form type changes
+  useEffect(() => {
+    clearError();
+  }, [isLogin]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setLoading(true);
 
     try {
@@ -28,7 +30,8 @@ export function AuthModal({ onClose }: AuthModalProps) {
       }
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+      // Error is already handled in the store
+      console.error('Auth error:', err);
     } finally {
       setLoading(false);
     }
@@ -53,15 +56,6 @@ export function AuthModal({ onClose }: AuthModalProps) {
             {isLogin ? 'Connectez-vous à votre compte' : 'Créez votre compte'}
           </p>
         </div>
-
-        {/* Close Button */}
-        <button 
-          onClick={onClose} 
-          className="absolute top-4 right-4 btn-icon hover:bg-white/10"
-          aria-label="Fermer"
-        >
-          <X className="w-5 h-5" />
-        </button>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -112,9 +106,9 @@ export function AuthModal({ onClose }: AuthModalProps) {
           </div>
 
           {/* Error Message */}
-          {error && (
+          {authError && (
             <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg animate-shake">
-              <p className="text-sm text-red-400">{error}</p>
+              <p className="text-sm text-red-400">{authError}</p>
             </div>
           )}
 

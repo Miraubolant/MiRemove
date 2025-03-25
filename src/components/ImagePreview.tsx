@@ -79,7 +79,7 @@ export function ImagePreview({
                 <button
                   type="button"
                   onClick={() => setShowOriginal(!showOriginal)}
-                  className={`btn-icon ${showOriginal ? 'bg-emerald-500/10' : ''}`}
+                  className={`btn-icon ${showOriginal ? 'bg-emerald-500/10 text-emerald-500' : ''}`}
                   title={showOriginal ? "Voir le résultat" : "Voir l'original"}
                 >
                   <SplitSquareVertical className="w-4 h-4" />
@@ -181,7 +181,7 @@ export function ImagePreview({
 
       {showModal && (
         <ImageModal
-          imageUrl={file.status === 'completed' ? file.result! : file.preview}
+          imageUrl={file.status === 'completed' ? (showOriginal ? file.preview : file.result!) : file.preview}
           originalUrl={file.status === 'completed' ? file.preview : undefined}
           onClose={() => setShowModal(false)}
         />

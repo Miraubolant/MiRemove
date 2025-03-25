@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { ImageIcon, Download, PaintBucket, Clock, Trash2, Ruler, X } from 'lucide-react';
 import { AuthModal } from './AuthModal';
 import { useAuthStore } from '../stores/authStore';
-import { ProgressBar } from './ProgressBar';
 import { useAdminSettingsStore } from '../stores/adminSettingsStore';
+import { ProgressBar } from './ProgressBar';
+import { supabase } from '../lib/supabase';
 
 interface ModelSelectorProps {
   onSubmit: (e: React.FormEvent) => void;
@@ -41,6 +42,33 @@ export function ModelSelector({
   const [width, setWidth] = useState<string>('');
   const [height, setHeight] = useState<string>('');
   const [dimensionsEnabled, setDimensionsEnabled] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if user is admin
+  React.useEffect(() => {
+    async function checkAdminStatus() {
+      if (!user) {
+        setIsAdmin(false);
+        return;
+      }
+
+      try {
+        const { data: userStats, error } = await supabase
+          .from('user_stats')
+          .select('is_admin')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) throw error;
+        setIsAdmin(userStats?.is_admin || false);
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        setIsAdmin(false);
+      }
+    }
+
+    checkAdminStatus();
+  }, [user]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,18 +116,21 @@ export function ModelSelector({
         )}
 
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setShowDimensionsModal(true)}
-            className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${
-              dimensionsEnabled
-                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white'
-                : 'bg-slate-700 hover:bg-slate-600 text-white'
-            }`}
-            title="Définir les dimensions"
-          >
-            <Ruler className="w-5 h-5" />
-          </button>
+          {/* Only show resize button for admins */}
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setShowDimensionsModal(true)}
+              className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${
+                dimensionsEnabled
+                  ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white'
+                  : 'bg-slate-700 hover:bg-slate-600 text-white'
+              }`}
+              title="Définir les dimensions"
+            >
+              <Ruler className="w-5 h-5" />
+            </button>
+          )}
 
           <button
             type="button"

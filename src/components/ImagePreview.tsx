@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Loader2, X, Info, ZoomIn, SplitSquareVertical, Play, Check, Maximize2, ArrowRight } from 'lucide-react';
+import { Loader2, X, Info, ZoomIn, SplitSquareVertical, Play, Check, Maximize2 } from 'lucide-react';
 import { ImageFile } from '../types';
 import { ImageModal } from './ImageModal';
 import { AuthModal } from './AuthModal';
@@ -38,10 +38,6 @@ export function ImagePreview({
     ? `${file.dimensions.width}×${file.dimensions.height}`
     : 'Dimensions inconnues';
 
-  const outputDimensionsText = outputDimensions
-    ? `${outputDimensions.width}×${outputDimensions.height}`
-    : null;
-
   const handleProcess = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user) {
@@ -61,12 +57,6 @@ export function ImagePreview({
                 <div className="text-xs bg-slate-800/80 text-gray-300 py-1.5 px-2.5 rounded-lg flex items-center gap-2">
                   <Maximize2 className="w-3 h-3 text-emerald-500" />
                   <span>{dimensionsText}</span>
-                  {outputDimensionsText && (
-                    <>
-                      <ArrowRight className="w-3 h-3 text-gray-500" />
-                      <span className="text-emerald-500">{outputDimensionsText}</span>
-                    </>
-                  )}
                 </div>
                 <div className="text-xs text-gray-500">
                   {formatFileSize(file.file.size)}
@@ -79,7 +69,7 @@ export function ImagePreview({
                 <button
                   type="button"
                   onClick={() => setShowOriginal(!showOriginal)}
-                  className={`btn-icon ${showOriginal ? 'bg-emerald-500/10 text-emerald-500' : ''}`}
+                  className={`btn-icon ${showOriginal ? 'bg-emerald-500/10' : ''}`}
                   title={showOriginal ? "Voir le résultat" : "Voir l'original"}
                 >
                   <SplitSquareVertical className="w-4 h-4" />
@@ -181,7 +171,7 @@ export function ImagePreview({
 
       {showModal && (
         <ImageModal
-          imageUrl={file.status === 'completed' ? (showOriginal ? file.preview : file.result!) : file.preview}
+          imageUrl={file.status === 'completed' ? file.result! : file.preview}
           originalUrl={file.status === 'completed' ? file.preview : undefined}
           onClose={() => setShowModal(false)}
         />

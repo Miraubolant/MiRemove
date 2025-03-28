@@ -1,12 +1,7 @@
 import { ImageFile } from '../types';
 
 // Constants for better maintainability
-const API_URL = 'https://api.miraubolant.com/remove-background';
-const RESIZE_PARAMS = {
-  mode: 'fit',
-  keep_ratio: 'true',
-  resampling: 'lanczos'
-} as const;
+const API_BASE_URL = 'https://api.miraubolant.com';
 const MAX_RETRIES = 3;
 const BASE_TIMEOUT = 30000;
 const BACKOFF_FACTOR = 2;
@@ -112,6 +107,55 @@ async function fetchWithRetry(
 // Initialize request queue
 const requestQueue = new RequestQueue(3);
 
+// Function to remove background
+async function removeBackgroundOnly(file: File, model: string = 'bria'): Promise<Blob> {
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const response = await fetchWithRetry(
+    `${API_BASE_URL}/remove-background?model=${model}`,
+    {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Accept': '*/*',
+        'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7'
+      }
+    }
+  );
+
+  return response.blob();
+}
+
+// Function to resize image
+async function resizeImage(blob: Blob, dimensions: { width: number; height: number; tool?: string }): Promise<Blob> {
+  const formData = new FormData();
+  formData.append('image', blob);
+
+  const queryParams = new URLSearchParams({
+    width: dimensions.width.toString(),
+    height: dimensions.height.toString(),
+    mode: 'fit',
+    keep_ratio: 'true',
+    resampling: 'lanczos',
+    ...(dimensions.tool && { tool: dimensions.tool })
+  });
+
+  const response = await fetchWithRetry(
+    `${API_BASE_URL}/resize?${queryParams.toString()}`,
+    {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Accept': '*/*',
+        'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7'
+      }
+    }
+  );
+
+  return response.blob();
+}
+
 export async function removeBackground(
   file: File, 
   model: string = 'bria',
@@ -121,58 +165,26 @@ export async function removeBackground(
   let success = false;
 
   try {
-    let resultUrl: string | undefined;
+    let resultBlob: Blob;
 
-    // Queue the API request with retries
+    // Queue the API requests with retries
     await requestQueue.add(async () => {
-      // Build URL with query parameters for resizing
-      const queryParams = new URLSearchParams({
-        model,
-        mode: RESIZE_PARAMS.mode,
-        keep_ratio: RESIZE_PARAMS.keep_ratio,
-        resampling: RESIZE_PARAMS.resampling
-      });
+      // First, remove the background
+      resultBlob = await removeBackgroundOnly(file, model);
 
-      // Add resize parameters if provided
+      // Then, if dimensions are provided, resize the image
       if (dimensions) {
-        queryParams.set('width', dimensions.width.toString());
-        queryParams.set('height', dimensions.height.toString());
-        if (dimensions.tool) {
-          queryParams.set('tool', dimensions.tool);
-        }
+        resultBlob = await resizeImage(resultBlob, dimensions);
       }
-
-      const url = `${API_URL}?${queryParams.toString()}`;
-
-      // Create form data with just the image
-      const formData = new FormData();
-      formData.append('image', file);
-
-      const response = await fetchWithRetry(
-        url,
-        {
-          method: 'POST',
-          body: formData,
-          headers: {
-            'Accept': '*/*',
-            'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7'
-          }
-        }
-      );
-
-      const blob = await response.blob();
-      resultUrl = URL.createObjectURL(blob);
     });
 
-    if (!resultUrl) {
-      throw new Error('Failed to process image');
-    }
-
+    // Create object URL from the final blob
+    const resultUrl = URL.createObjectURL(resultBlob);
     success = true;
     return resultUrl;
   } catch (error) {
     success = false;
-    console.error('Error removing background:', error);
+    console.error('Error processing image:', error);
     throw new Error(error.message || 'Failed to process image');
   } finally {
     const processingTime = (performance.now() - startTime) / 1000;

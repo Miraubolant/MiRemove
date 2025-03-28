@@ -133,7 +133,6 @@ export async function removeBackground(
 
       // Add dimensions and resize parameters if provided
       if (dimensions) {
-        // Add dimensions
         formData.append("width", dimensions.width.toString());
         formData.append("height", dimensions.height.toString());
         

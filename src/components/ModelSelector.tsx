@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { ImageIcon, Download, PaintBucket, Clock, Trash2, Maximize2, Settings } from 'lucide-react';
+import { ImageIcon, Download, PaintBucket, Clock, Trash2 } from 'lucide-react';
 import { AuthModal } from './AuthModal';
 import { useAuthStore } from '../stores/authStore';
 import { ProgressBar } from './ProgressBar';
 import { useAdminSettingsStore } from '../stores/adminSettingsStore';
-import { ResizeModal } from './ResizeModal';
 
 interface ModelSelectorProps {
   onSubmit: (e: React.FormEvent) => void;
@@ -35,17 +34,7 @@ export function ModelSelector({
 }: ModelSelectorProps) {
   const { user } = useAuthStore();
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showResizeModal, setShowResizeModal] = useState(false);
   const { settings } = useAdminSettingsStore();
-  const [resizeConfig, setResizeConfig] = useState(() => {
-    const saved = localStorage.getItem('resize-config');
-    return saved ? JSON.parse(saved) : {
-      enabled: false,
-      dimensions: { width: 1000, height: 1500 },
-      model: 'imagemagick',
-      bypass: false
-    };
-  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,29 +66,6 @@ export function ModelSelector({
         )}
 
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setShowResizeModal(true)}
-            className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 relative group ${
-              resizeConfig.enabled 
-                ? 'bg-emerald-500 text-white'
-                : 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600'
-            }`}
-            title="Redimensionner les images"
-          >
-            {resizeConfig.enabled ? (
-              <Settings className="w-5 h-5" />
-            ) : (
-              <Maximize2 className="w-5 h-5" />
-            )}
-            {resizeConfig.enabled && (
-              <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-xs px-2 py-1 rounded whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-                {resizeConfig.dimensions.width}×{resizeConfig.dimensions.height}px
-                {resizeConfig.bypass && ' (Ignoré)'}
-              </div>
-            )}
-          </button>
-
           <button
             type="button"
             onClick={onApplyWhiteBackground}
@@ -164,27 +130,6 @@ export function ModelSelector({
 
       {showAuthModal && (
         <AuthModal onClose={() => setShowAuthModal(false)} />
-      )}
-
-      {showResizeModal && (
-        <ResizeModal
-          onClose={() => setShowResizeModal(false)}
-          onApply={(options) => {
-            const newConfig = {
-              enabled: options.enabled,
-              dimensions: {
-                width: options.width,
-                height: options.height
-              },
-              model: options.type,
-              bypass: options.bypass
-            };
-            setResizeConfig(newConfig);
-            localStorage.setItem('resize-config', JSON.stringify(newConfig));
-            setShowResizeModal(false);
-          }}
-          initialConfig={resizeConfig}
-        />
       )}
     </div>
   );

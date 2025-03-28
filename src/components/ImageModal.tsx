@@ -6,7 +6,6 @@ import { removeBackground } from '../services/api';
 interface ImageModalProps {
   imageUrl: string;
   originalUrl?: string;
-  originalFilename?: string;
   onClose: () => void;
 }
 
@@ -19,7 +18,7 @@ const models = [
 const DEFAULT_MODAL_WIDTH = 1600;
 const DEFAULT_MODAL_HEIGHT = 900;
 
-export function ImageModal({ imageUrl, originalUrl, originalFilename, onClose }: ImageModalProps) {
+export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -230,13 +229,10 @@ export function ImageModal({ imageUrl, originalUrl, originalFilename, onClose }:
       );
     });
 
-    // Utiliser le nom de fichier original s'il est disponible
-    const fileName = originalFilename ? originalFilename.replace(/\.[^/.]+$/, '') + '.jpg' : 'image.jpg';
-
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = fileName;
+    a.download = 'image.jpg';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

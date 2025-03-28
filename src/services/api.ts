@@ -1,4 +1,4 @@
-import { ImageFile } from '../types';
+import { compressImage } from './imageCompression';
 
 // Implement request queue with concurrency control and retries
 class RequestQueue {
@@ -55,7 +55,7 @@ class LRUCache {
   private maxSize: number;
   private cleanupInterval: number;
 
-  constructor(maxSize = 50, cleanupInterval = 300000) {
+  constructor(maxSize = 50, cleanupInterval = 300000) { // 5 minutes default cleanup
     this.cache = new Map();
     this.maxSize = maxSize;
     this.cleanupInterval = cleanupInterval;
@@ -105,19 +105,6 @@ class LRUCache {
 const requestQueue = new RequestQueue(3);
 const cache = new LRUCache(50);
 
-// Get resize configuration from localStorage
-function getResizeConfig() {
-  const saved = localStorage.getItem('resize-config');
-  if (!saved) return null;
-  try {
-    const config = JSON.parse(saved);
-    return config.enabled ? config : null;
-  } catch (err) {
-    console.error('Error parsing resize config:', err);
-    return null;
-  }
-}
-
 // Implement request timeout and retry with exponential backoff
 async function fetchWithRetry(
   url: string,
@@ -136,23 +123,11 @@ async function fetchWithRetry(
     try {
       const response = await fetch(url, {
         ...options,
-        mode: 'cors',
-        credentials: 'omit',
-        signal: controller.signal,
-        headers: {
-          ...options.headers,
-          'Accept': 'application/json, image/*, */*',
-          'Origin': window.location.origin
-        }
+        signal: controller.signal
       });
 
       if (response.ok) {
         return response;
-      }
-
-      // Check for CORS error
-      if (response.type === 'opaque' || response.status === 0) {
-        throw new Error('CORS error: Unable to access the API. Please ensure the API allows requests from this domain.');
       }
 
       const errorData = await response.json().catch(() => ({}));
@@ -163,16 +138,10 @@ async function fetchWithRetry(
       }
 
       if (attempt === retries) {
-        if (error.message.includes('CORS error')) {
-          console.error('CORS error details:', {
-            url,
-            origin: window.location.origin,
-            error: error.message
-          });
-        }
         throw error;
       }
 
+      // Exponential backoff with jitter
       const jitter = Math.random() * 1000;
       await new Promise(resolve => setTimeout(resolve, timeout + jitter));
       timeout *= backoffFactor;
@@ -184,36 +153,6 @@ async function fetchWithRetry(
   }
 
   throw new Error('Maximum retries exceeded');
-}
-
-// Resize image using XnConvert API
-async function resizeImage(file: File, config: any): Promise<Blob> {
-  try {
-    const formData = new FormData();
-    formData.append('image', file);
-    formData.append('width', config.dimensions.width.toString());
-    formData.append('height', config.dimensions.height.toString());
-    formData.append('format', 'jpg');
-    formData.append('resize_mode', 'fit');
-    formData.append('keep_ratio', 'true');
-    formData.append('resampling', 'hanning');
-    formData.append('crop_position', 'center');
-    formData.append('bg_color', 'white');
-    formData.append('bg_alpha', '255');
-
-    const response = await fetchWithRetry(
-      `https://xnconvert.miraubolant.com/process/${config.model}`,
-      {
-        method: 'POST',
-        body: formData
-      }
-    );
-
-    return await response.blob();
-  } catch (error) {
-    console.error('Error in resizeImage:', error);
-    throw new Error(`Failed to resize image: ${error.message}`);
-  }
 }
 
 function generateCacheKey(file: File, model: string, dimensions?: { width: number; height: number }): string {
@@ -238,39 +177,51 @@ export async function removeBackground(
       return cachedResult;
     }
 
-    let processedFile = file;
+    // Compress image before processing
+    const compressedFile = await compressImage(file, {
+      maxWidth: dimensions?.width || 2048,
+      maxHeight: dimensions?.height || 2048,
+      quality: 0.8,
+      maxSizeMB: 10
+    });
+
     let resultUrl: string | undefined;
 
-    // Get resize configuration
-    const resizeConfig = getResizeConfig();
-    
-    // Queue the API requests with retries
+    // Queue the API request with retries
     await requestQueue.add(async () => {
-      try {
-        // Step 1: Resize if enabled and not bypassed
-        if (resizeConfig?.enabled && !resizeConfig.bypass) {
-          const resizedBlob = await resizeImage(file, resizeConfig);
-          processedFile = new File([resizedBlob], file.name, { type: 'image/jpeg' });
+      const formData = new FormData();
+      formData.append("image", compressedFile);
+      formData.append("model", model);
+
+      const response = await fetchWithRetry(
+        'https://api.miraubolant.com/remove-background',
+        {
+          method: 'POST',
+          body: formData,
+        },
+        3, // retries
+        30000, // base timeout
+        2 // backoff factor
+      );
+
+      const blob = await response.blob();
+      
+      if (dimensions) {
+        const canvas = new OffscreenCanvas(dimensions.width, dimensions.height);
+        const ctx = canvas.getContext('2d');
+        
+        if (ctx) {
+          const bitmap = await createImageBitmap(blob);
+          ctx.drawImage(bitmap, 0, 0, dimensions.width, dimensions.height);
+          bitmap.close();
+          
+          const resizedBlob = await canvas.convertToBlob({ type: 'image/png' });
+          resultUrl = URL.createObjectURL(resizedBlob);
         }
+      }
 
-        // Step 2: Remove background
-        const formData = new FormData();
-        formData.append("image", processedFile);
-        formData.append("model", model);
-
-        const response = await fetchWithRetry(
-          'https://api.miraubolant.com/remove-background',
-          {
-            method: 'POST',
-            body: formData,
-          }
-        );
-
-        const blob = await response.blob();
+      if (!resultUrl) {
         resultUrl = URL.createObjectURL(blob);
-      } catch (error) {
-        console.error('Error in request queue:', error);
-        throw error;
       }
     });
 

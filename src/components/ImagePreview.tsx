@@ -173,7 +173,6 @@ export function ImagePreview({
         <ImageModal
           imageUrl={file.status === 'completed' ? file.result! : file.preview}
           originalUrl={file.status === 'completed' ? file.preview : undefined}
-          originalFilename={file.file.name}
           onClose={() => setShowModal(false)}
         />
       )}

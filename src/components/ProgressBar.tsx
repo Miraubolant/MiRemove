@@ -61,7 +61,6 @@ export function ProgressBar({ total, completed, maxFreeImages }: ProgressBarProp
             )}
           </span>
         </div>
-
         <div className="flex items-center gap-2 text-sm text-gray-400">
           <Clock className="w-4 h-4" />
           <span>
@@ -71,12 +70,14 @@ export function ProgressBar({ total, completed, maxFreeImages }: ProgressBarProp
       </div>
 
       <div className="relative h-1.5">
+        {/* Fond de la barre avec effet de grain */}
         <div className="absolute inset-0 bg-slate-700/50">
           <div className="absolute inset-0 opacity-50 mix-blend-overlay">
             <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMDAwMDAwMTAiLz4KPHJlY3Qgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0iI2ZmZmZmZjEwIi8+Cjwvc3ZnPg==')]" />
           </div>
         </div>
 
+        {/* Barre de progression avec effets */}
         <div
           className={`absolute h-full transition-all duration-500 ease-out ${
             isComplete
@@ -85,15 +86,18 @@ export function ProgressBar({ total, completed, maxFreeImages }: ProgressBarProp
           }`}
           style={{ width: `${progress}%` }}
         >
+          {/* Effet de brillance */}
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute inset-0 opacity-75">
               <div className="absolute top-0 -left-[100%] w-[400%] h-full animate-[shine_2s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
             </div>
           </div>
 
+          {/* Effet de pulsation */}
           <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-emerald-400 animate-pulse opacity-50" />
         </div>
 
+        {/* Points de progression */}
         <div className="absolute inset-0 flex items-center">
           {[...Array(Math.ceil(total / 2))].map((_, i) => (
             <div

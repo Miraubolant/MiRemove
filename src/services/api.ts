@@ -163,7 +163,8 @@ function generateCacheKey(file: File, model: string, dimensions?: { width: numbe
 export async function removeBackground(
   file: File, 
   model: string = 'bria',
-  dimensions?: { width: number; height: number }
+  dimensions?: { width: number; height: number },
+  resizeOption?: { type: string; width: number; height: number }
 ): Promise<string> {
   const startTime = performance.now();
   let success = false;
@@ -193,36 +194,42 @@ export async function removeBackground(
       formData.append("image", compressedFile);
       formData.append("model", model);
 
+      // If resize option is selected, process with XnConvert API first
+      if (resizeOption && resizeOption.type !== 'none') {
+        const resizeFormData = new FormData();
+        resizeFormData.append("image", compressedFile);
+        resizeFormData.append("width", resizeOption.width.toString());
+        resizeFormData.append("height", resizeOption.height.toString());
+        resizeFormData.append("format", "jpg");
+        resizeFormData.append("resize_mode", "fit");
+        resizeFormData.append("keep_ratio", "true");
+        resizeFormData.append("resampling", "hanning");
+        resizeFormData.append("crop_position", "center");
+        resizeFormData.append("bg_color", "white");
+        resizeFormData.append("bg_alpha", "255");
+
+        const resizeResponse = await fetchWithRetry(
+          `https://xnconvert.miraubolant.com/process/${resizeOption.type}`,
+          {
+            method: 'POST',
+            body: resizeFormData,
+          }
+        );
+
+        const resizedBlob = await resizeResponse.blob();
+        formData.set("image", resizedBlob);
+      }
+
       const response = await fetchWithRetry(
         'https://api.miraubolant.com/remove-background',
         {
           method: 'POST',
           body: formData,
-        },
-        3, // retries
-        30000, // base timeout
-        2 // backoff factor
+        }
       );
 
       const blob = await response.blob();
-      
-      if (dimensions) {
-        const canvas = new OffscreenCanvas(dimensions.width, dimensions.height);
-        const ctx = canvas.getContext('2d');
-        
-        if (ctx) {
-          const bitmap = await createImageBitmap(blob);
-          ctx.drawImage(bitmap, 0, 0, dimensions.width, dimensions.height);
-          bitmap.close();
-          
-          const resizedBlob = await canvas.convertToBlob({ type: 'image/png' });
-          resultUrl = URL.createObjectURL(resizedBlob);
-        }
-      }
-
-      if (!resultUrl) {
-        resultUrl = URL.createObjectURL(blob);
-      }
+      resultUrl = URL.createObjectURL(blob);
     });
 
     if (!resultUrl) {

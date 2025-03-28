@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { X, Maximize2, Check, Settings2, Wand2, Power } from 'lucide-react';
+import { X, Maximize2, Check, Settings2, Wand2, Power, SkipBack as Skip } from 'lucide-react';
 
 interface ResizeModalProps {
   onClose: () => void;
-  onApply: (options: { type: string; width: number; height: number; enabled: boolean }) => void;
+  onApply: (options: { type: string; width: number; height: number; enabled: boolean; bypass: boolean }) => void;
   initialConfig?: {
     enabled: boolean;
     dimensions: { width: number; height: number };
     model: string;
+    bypass?: boolean;
   };
 }
 
@@ -23,7 +24,8 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
     return initialConfig || {
       enabled: false,
       dimensions: { width: 1000, height: 1500 },
-      model: 'imagemagick'
+      model: 'imagemagick',
+      bypass: false
     };
   });
 
@@ -34,7 +36,8 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
       type: config.model,
       width: parseInt(config.dimensions.width.toString()),
       height: parseInt(config.dimensions.height.toString()),
-      enabled: config.enabled
+      enabled: config.enabled,
+      bypass: config.bypass
     });
   };
 
@@ -77,6 +80,27 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
                 }`}
               >
                 <span className="text-sm">{config.enabled ? 'Activé' : 'Désactivé'}</span>
+              </button>
+            </div>
+
+            {/* Bypass Option */}
+            <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg border border-gray-700/50">
+              <div className="flex items-center gap-3">
+                <Skip className="w-5 h-5 text-emerald-500" />
+                <div>
+                  <h4 className="font-medium text-gray-200">Ignorer le redimensionnement</h4>
+                  <p className="text-sm text-gray-400">Utiliser les images originales</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setConfig(prev => ({ ...prev, bypass: !prev.bypass }))}
+                className={`px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors ${
+                  config.bypass
+                    ? 'bg-emerald-500/20 text-emerald-500'
+                    : 'bg-gray-700/50 text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                <span className="text-sm">{config.bypass ? 'Ignoré' : 'Normal'}</span>
               </button>
             </div>
 

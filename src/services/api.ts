@@ -110,7 +110,8 @@ function getResizeConfig() {
   const saved = localStorage.getItem('resize-config');
   if (!saved) return null;
   try {
-    return JSON.parse(saved);
+    const config = JSON.parse(saved);
+    return config.enabled ? config : null;
   } catch (err) {
     console.error('Error parsing resize config:', err);
     return null;
@@ -135,11 +136,23 @@ async function fetchWithRetry(
     try {
       const response = await fetch(url, {
         ...options,
-        signal: controller.signal
+        mode: 'cors',
+        credentials: 'omit',
+        signal: controller.signal,
+        headers: {
+          ...options.headers,
+          'Accept': 'application/json, image/*, */*',
+          'Origin': window.location.origin
+        }
       });
 
       if (response.ok) {
         return response;
+      }
+
+      // Check for CORS error
+      if (response.type === 'opaque' || response.status === 0) {
+        throw new Error('CORS error: Unable to access the API. Please ensure the API allows requests from this domain.');
       }
 
       const errorData = await response.json().catch(() => ({}));
@@ -150,6 +163,13 @@ async function fetchWithRetry(
       }
 
       if (attempt === retries) {
+        if (error.message.includes('CORS error')) {
+          console.error('CORS error details:', {
+            url,
+            origin: window.location.origin,
+            error: error.message
+          });
+        }
         throw error;
       }
 
@@ -168,27 +188,32 @@ async function fetchWithRetry(
 
 // Resize image using XnConvert API
 async function resizeImage(file: File, config: any): Promise<Blob> {
-  const formData = new FormData();
-  formData.append('image', file);
-  formData.append('width', config.dimensions.width.toString());
-  formData.append('height', config.dimensions.height.toString());
-  formData.append('format', 'jpg');
-  formData.append('resize_mode', 'fit');
-  formData.append('keep_ratio', 'true');
-  formData.append('resampling', 'hanning');
-  formData.append('crop_position', 'center');
-  formData.append('bg_color', 'white');
-  formData.append('bg_alpha', '255');
+  try {
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('width', config.dimensions.width.toString());
+    formData.append('height', config.dimensions.height.toString());
+    formData.append('format', 'jpg');
+    formData.append('resize_mode', 'fit');
+    formData.append('keep_ratio', 'true');
+    formData.append('resampling', 'hanning');
+    formData.append('crop_position', 'center');
+    formData.append('bg_color', 'white');
+    formData.append('bg_alpha', '255');
 
-  const response = await fetchWithRetry(
-    `https://xnconvert.miraubolant.com/process/${config.model}`,
-    {
-      method: 'POST',
-      body: formData
-    }
-  );
+    const response = await fetchWithRetry(
+      `https://xnconvert.miraubolant.com/process/${config.model}`,
+      {
+        method: 'POST',
+        body: formData
+      }
+    );
 
-  return await response.blob();
+    return await response.blob();
+  } catch (error) {
+    console.error('Error in resizeImage:', error);
+    throw new Error(`Failed to resize image: ${error.message}`);
+  }
 }
 
 function generateCacheKey(file: File, model: string, dimensions?: { width: number; height: number }): string {
@@ -221,27 +246,32 @@ export async function removeBackground(
     
     // Queue the API requests with retries
     await requestQueue.add(async () => {
-      // Step 1: Resize if enabled
-      if (resizeConfig?.enabled) {
-        const resizedBlob = await resizeImage(file, resizeConfig);
-        processedFile = new File([resizedBlob], file.name, { type: 'image/jpeg' });
-      }
-
-      // Step 2: Remove background
-      const formData = new FormData();
-      formData.append("image", processedFile);
-      formData.append("model", model);
-
-      const response = await fetchWithRetry(
-        'https://api.miraubolant.com/remove-background',
-        {
-          method: 'POST',
-          body: formData,
+      try {
+        // Step 1: Resize if enabled and not bypassed
+        if (resizeConfig?.enabled && !resizeConfig.bypass) {
+          const resizedBlob = await resizeImage(file, resizeConfig);
+          processedFile = new File([resizedBlob], file.name, { type: 'image/jpeg' });
         }
-      );
 
-      const blob = await response.blob();
-      resultUrl = URL.createObjectURL(blob);
+        // Step 2: Remove background
+        const formData = new FormData();
+        formData.append("image", processedFile);
+        formData.append("model", model);
+
+        const response = await fetchWithRetry(
+          'https://api.miraubolant.com/remove-background',
+          {
+            method: 'POST',
+            body: formData,
+          }
+        );
+
+        const blob = await response.blob();
+        resultUrl = URL.createObjectURL(blob);
+      } catch (error) {
+        console.error('Error in request queue:', error);
+        throw error;
+      }
     });
 
     if (!resultUrl) {

@@ -42,7 +42,8 @@ export function ModelSelector({
     return saved ? JSON.parse(saved) : {
       enabled: false,
       dimensions: { width: 1000, height: 1500 },
-      model: 'imagemagick'
+      model: 'imagemagick',
+      bypass: false
     };
   });
 
@@ -92,8 +93,9 @@ export function ModelSelector({
               <Maximize2 className="w-5 h-5" />
             )}
             {resizeConfig.enabled && (
-              <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-xs px-2 py-1 rounded whitespace-nowrap pointer-events-none">
+              <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-xs px-2 py-1 rounded whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
                 {resizeConfig.dimensions.width}×{resizeConfig.dimensions.height}px
+                {resizeConfig.bypass && ' (Ignoré)'}
               </div>
             )}
           </button>
@@ -174,7 +176,8 @@ export function ModelSelector({
                 width: options.width,
                 height: options.height
               },
-              model: options.type
+              model: options.type,
+              bypass: options.bypass
             };
             setResizeConfig(newConfig);
             localStorage.setItem('resize-config', JSON.stringify(newConfig));

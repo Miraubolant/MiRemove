@@ -2,6 +2,11 @@ import { ImageFile } from '../types';
 
 // Constants for better maintainability
 const API_URL = 'https://api.miraubolant.com/remove-background';
+const RESIZE_PARAMS = {
+  mode: 'fit',
+  keep_ratio: 'true',
+  resampling: 'hanning'
+} as const;
 const MAX_RETRIES = 3;
 const BASE_TIMEOUT = 30000;
 const BACKOFF_FACTOR = 2;
@@ -128,6 +133,12 @@ export async function removeBackground(
       if (dimensions) {
         formData.append("width", dimensions.width.toString());
         formData.append("height", dimensions.height.toString());
+        
+        // Add default resize parameters
+        formData.append("mode", RESIZE_PARAMS.mode);
+        formData.append("keep_ratio", RESIZE_PARAMS.keep_ratio);
+        formData.append("resampling", RESIZE_PARAMS.resampling);
+        
         if (dimensions.tool) {
           formData.append("tool", dimensions.tool);
         }

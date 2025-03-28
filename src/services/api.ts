@@ -1,4 +1,5 @@
 import { ImageFile } from '../types';
+import { compressImage } from './imageCompression';
 
 // Constants for better maintainability
 const API_BASE_URL = 'https://api.miraubolant.com';
@@ -53,6 +54,43 @@ class RequestQueue {
       this.processQueue();
     }
   }
+}
+
+// Convert Blob to JPG format
+async function convertToJPG(blob: Blob): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) {
+      reject(new Error('Failed to get canvas context'));
+      return;
+    }
+
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      
+      canvas.toBlob(
+        (jpgBlob) => {
+          if (!jpgBlob) {
+            reject(new Error('Failed to convert to JPG'));
+            return;
+          }
+          resolve(jpgBlob);
+        },
+        'image/jpeg',
+        0.95
+      );
+    };
+
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = URL.createObjectURL(blob);
+  });
 }
 
 // Implement request timeout and retry with exponential backoff
@@ -116,11 +154,7 @@ async function removeBackgroundOnly(file: File, model: string = 'bria'): Promise
     `${API_BASE_URL}/remove-background?model=${model}`,
     {
       method: 'POST',
-      body: formData,
-      headers: {
-        'Accept': '*/*',
-        'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7'
-      }
+      body: formData
     }
   );
 
@@ -129,8 +163,11 @@ async function removeBackgroundOnly(file: File, model: string = 'bria'): Promise
 
 // Function to resize image
 async function resizeImage(blob: Blob, dimensions: { width: number; height: number; tool?: string }): Promise<Blob> {
+  // Convert to JPG first
+  const jpgBlob = await convertToJPG(blob);
+  
   const formData = new FormData();
-  formData.append('image', blob);
+  formData.append('image', jpgBlob, 'image.jpg');
 
   const queryParams = new URLSearchParams({
     width: dimensions.width.toString(),
@@ -145,11 +182,7 @@ async function resizeImage(blob: Blob, dimensions: { width: number; height: numb
     `${API_BASE_URL}/resize?${queryParams.toString()}`,
     {
       method: 'POST',
-      body: formData,
-      headers: {
-        'Accept': '*/*',
-        'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7'
-      }
+      body: formData
     }
   );
 

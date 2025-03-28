@@ -1,4 +1,4 @@
-import { compressImage } from './imageCompression';
+import { ImageFile } from '../types';
 
 // Implement request queue with concurrency control and retries
 class RequestQueue {
@@ -55,7 +55,7 @@ class LRUCache {
   private maxSize: number;
   private cleanupInterval: number;
 
-  constructor(maxSize = 50, cleanupInterval = 300000) { // 5 minutes default cleanup
+  constructor(maxSize = 50, cleanupInterval = 300000) {
     this.cache = new Map();
     this.maxSize = maxSize;
     this.cleanupInterval = cleanupInterval;
@@ -166,6 +166,31 @@ async function fetchWithRetry(
   throw new Error('Maximum retries exceeded');
 }
 
+// Resize image using XnConvert API
+async function resizeImage(file: File, config: any): Promise<Blob> {
+  const formData = new FormData();
+  formData.append('image', file);
+  formData.append('width', config.dimensions.width.toString());
+  formData.append('height', config.dimensions.height.toString());
+  formData.append('format', 'jpg');
+  formData.append('resize_mode', 'fit');
+  formData.append('keep_ratio', 'true');
+  formData.append('resampling', 'hanning');
+  formData.append('crop_position', 'center');
+  formData.append('bg_color', 'white');
+  formData.append('bg_alpha', '255');
+
+  const response = await fetchWithRetry(
+    `https://xnconvert.miraubolant.com/process/${config.model}`,
+    {
+      method: 'POST',
+      body: formData
+    }
+  );
+
+  return await response.blob();
+}
+
 function generateCacheKey(file: File, model: string, dimensions?: { width: number; height: number }): string {
   const dimensionKey = dimensions ? `-${dimensions.width}x${dimensions.height}` : '';
   return `${file.name}-${file.size}-${file.lastModified}-${model}${dimensionKey}`;
@@ -188,33 +213,24 @@ export async function removeBackground(
       return cachedResult;
     }
 
-    // Get resize configuration
-    const resizeConfig = getResizeConfig();
-    const shouldResize = resizeConfig?.enabled && resizeConfig?.dimensions;
-
-    // Compress image before processing
-    const compressedFile = await compressImage(file, {
-      maxWidth: shouldResize ? resizeConfig.dimensions.width : (dimensions?.width || 2048),
-      maxHeight: shouldResize ? resizeConfig.dimensions.height : (dimensions?.height || 2048),
-      quality: 0.8,
-      maxSizeMB: 10
-    });
-
+    let processedFile = file;
     let resultUrl: string | undefined;
 
-    // Queue the API request with retries
+    // Get resize configuration
+    const resizeConfig = getResizeConfig();
+    
+    // Queue the API requests with retries
     await requestQueue.add(async () => {
-      const formData = new FormData();
-      formData.append("image", compressedFile);
-      formData.append("model", model);
-
-      // If resize is enabled, add resize parameters
-      if (shouldResize) {
-        formData.append("resize", "true");
-        formData.append("resize_width", resizeConfig.dimensions.width.toString());
-        formData.append("resize_height", resizeConfig.dimensions.height.toString());
-        formData.append("resize_model", resizeConfig.model);
+      // Step 1: Resize if enabled
+      if (resizeConfig?.enabled) {
+        const resizedBlob = await resizeImage(file, resizeConfig);
+        processedFile = new File([resizedBlob], file.name, { type: 'image/jpeg' });
       }
+
+      // Step 2: Remove background
+      const formData = new FormData();
+      formData.append("image", processedFile);
+      formData.append("model", model);
 
       const response = await fetchWithRetry(
         'https://api.miraubolant.com/remove-background',

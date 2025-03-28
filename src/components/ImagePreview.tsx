@@ -64,9 +64,6 @@ export function ImagePreview({
                     <span>{outputDimensions.width}×{outputDimensions.height}</span>
                   </div>
                 )}
-                <div className="text-xs text-gray-500">
-                  {formatFileSize(file.file.size)}
-                </div>
               </div>
             </div>
 
@@ -106,6 +103,10 @@ export function ImagePreview({
                 <p className="text-xs">
                   <span className="text-gray-400">Type : </span>
                   <span className="text-gray-300">{file.file.type}</span>
+                </p>
+                <p className="text-xs">
+                  <span className="text-gray-400">Taille : </span>
+                  <span className="text-gray-300">{formatFileSize(file.file.size)}</span>
                 </p>
                 <p className="text-xs">
                   <span className="text-gray-400">Status : </span>

@@ -1,6 +1,12 @@
-import { compressImage } from './imageCompression';
+import { ImageFile } from '../types';
 
-// Implement request queue with concurrency control and retries
+// Constants for better maintainability
+const API_URL = 'https://api.miraubolant.com/remove-background';
+const MAX_RETRIES = 3;
+const BASE_TIMEOUT = 30000;
+const BACKOFF_FACTOR = 2;
+
+// Implement request queue with concurrency control
 class RequestQueue {
   private queue: (() => Promise<void>)[] = [];
   private processing = false;
@@ -49,69 +55,13 @@ class RequestQueue {
   }
 }
 
-// Implement LRU cache with automatic cleanup
-class LRUCache {
-  private cache: Map<string, string>;
-  private maxSize: number;
-  private cleanupInterval: number;
-
-  constructor(maxSize = 50, cleanupInterval = 300000) { // 5 minutes default cleanup
-    this.cache = new Map();
-    this.maxSize = maxSize;
-    this.cleanupInterval = cleanupInterval;
-    this.startCleanup();
-  }
-
-  private startCleanup() {
-    setInterval(() => {
-      if (this.cache.size > this.maxSize / 2) {
-        const entriesToRemove = Math.floor(this.cache.size / 4);
-        const entries = Array.from(this.cache.entries());
-        for (let i = 0; i < entriesToRemove; i++) {
-          const [key, url] = entries[i];
-          URL.revokeObjectURL(url);
-          this.cache.delete(key);
-        }
-      }
-    }, this.cleanupInterval);
-  }
-
-  get(key: string): string | undefined {
-    const value = this.cache.get(key);
-    if (value) {
-      this.cache.delete(key);
-      this.cache.set(key, value);
-    }
-    return value;
-  }
-
-  set(key: string, value: string): void {
-    if (this.cache.size >= this.maxSize) {
-      const firstKey = this.cache.keys().next().value;
-      const url = this.cache.get(firstKey);
-      if (url) URL.revokeObjectURL(url);
-      this.cache.delete(firstKey);
-    }
-    this.cache.set(key, value);
-  }
-
-  clear(): void {
-    this.cache.forEach(url => URL.revokeObjectURL(url));
-    this.cache.clear();
-  }
-}
-
-// Initialize queue and cache
-const requestQueue = new RequestQueue(3);
-const cache = new LRUCache(50);
-
 // Implement request timeout and retry with exponential backoff
 async function fetchWithRetry(
   url: string,
   options: RequestInit,
-  retries = 3,
-  baseTimeout = 30000,
-  backoffFactor = 2
+  retries = MAX_RETRIES,
+  baseTimeout = BASE_TIMEOUT,
+  backoffFactor = BACKOFF_FACTOR
 ): Promise<Response> {
   let attempt = 0;
   let timeout = baseTimeout;
@@ -141,7 +91,6 @@ async function fetchWithRetry(
         throw error;
       }
 
-      // Exponential backoff with jitter
       const jitter = Math.random() * 1000;
       await new Promise(resolve => setTimeout(resolve, timeout + jitter));
       timeout *= backoffFactor;
@@ -155,10 +104,8 @@ async function fetchWithRetry(
   throw new Error('Maximum retries exceeded');
 }
 
-function generateCacheKey(file: File, model: string, dimensions?: { width: number; height: number }): string {
-  const dimensionKey = dimensions ? `-${dimensions.width}x${dimensions.height}` : '';
-  return `${file.name}-${file.size}-${file.lastModified}-${model}${dimensionKey}`;
-}
+// Initialize request queue
+const requestQueue = new RequestQueue(3);
 
 export async function removeBackground(
   file: File, 
@@ -167,69 +114,38 @@ export async function removeBackground(
 ): Promise<string> {
   const startTime = performance.now();
   let success = false;
-  const cacheKey = generateCacheKey(file, model, dimensions);
-  
+
   try {
-    // Check cache first
-    const cachedResult = cache.get(cacheKey);
-    if (cachedResult) {
-      success = true;
-      return cachedResult;
-    }
-
-    // Compress image before processing
-    const compressedFile = await compressImage(file, {
-      maxWidth: dimensions?.width || 2048,
-      maxHeight: dimensions?.height || 2048,
-      quality: 0.8,
-      maxSizeMB: 10
-    });
-
     let resultUrl: string | undefined;
 
     // Queue the API request with retries
     await requestQueue.add(async () => {
       const formData = new FormData();
-      formData.append("image", compressedFile);
+      formData.append("image", file);
       formData.append("model", model);
 
+      // Add dimensions if provided
+      if (dimensions) {
+        formData.append("width", dimensions.width.toString());
+        formData.append("height", dimensions.height.toString());
+      }
+
       const response = await fetchWithRetry(
-        'https://api.miraubolant.com/remove-background',
+        API_URL,
         {
           method: 'POST',
           body: formData,
-        },
-        3, // retries
-        30000, // base timeout
-        2 // backoff factor
+        }
       );
 
       const blob = await response.blob();
-      
-      if (dimensions) {
-        const canvas = new OffscreenCanvas(dimensions.width, dimensions.height);
-        const ctx = canvas.getContext('2d');
-        
-        if (ctx) {
-          const bitmap = await createImageBitmap(blob);
-          ctx.drawImage(bitmap, 0, 0, dimensions.width, dimensions.height);
-          bitmap.close();
-          
-          const resizedBlob = await canvas.convertToBlob({ type: 'image/png' });
-          resultUrl = URL.createObjectURL(resizedBlob);
-        }
-      }
-
-      if (!resultUrl) {
-        resultUrl = URL.createObjectURL(blob);
-      }
+      resultUrl = URL.createObjectURL(blob);
     });
 
     if (!resultUrl) {
       throw new Error('Failed to process image');
     }
 
-    cache.set(cacheKey, resultUrl);
     success = true;
     return resultUrl;
   } catch (error) {

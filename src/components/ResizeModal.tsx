@@ -3,7 +3,7 @@ import { X, Shield, AlertTriangle, Check, Settings2, Wand2, Power, SkipBack as S
 
 interface ResizeModalProps {
   onClose: () => void;
-  onApply: (options: { width: number; height: number }) => void;
+  onApply: (options: { width: number; height: number } | null) => void;
   initialConfig?: {
     enabled: boolean;
     dimensions: { width: number; height: number };
@@ -31,10 +31,11 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
   const handleApply = () => {
     if (!config.dimensions.width || !config.dimensions.height) return;
     
-    onApply({
+    // Only pass dimensions if resizing is enabled
+    onApply(config.enabled ? {
       width: parseInt(config.dimensions.width.toString()),
       height: parseInt(config.dimensions.height.toString())
-    });
+    } : null);
   };
 
   return (
@@ -76,27 +77,6 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
                 }`}
               >
                 <span className="text-sm">{config.enabled ? 'Activé' : 'Désactivé'}</span>
-              </button>
-            </div>
-
-            {/* Bypass Option */}
-            <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg border border-gray-700/50">
-              <div className="flex items-center gap-3">
-                <Skip className="w-5 h-5 text-emerald-500" />
-                <div>
-                  <h4 className="font-medium text-gray-200">Ignorer le redimensionnement</h4>
-                  <p className="text-sm text-gray-400">Utiliser les images originales</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setConfig(prev => ({ ...prev, bypass: !prev.bypass }))}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors ${
-                  config.bypass
-                    ? 'bg-emerald-500/20 text-emerald-500'
-                    : 'bg-gray-700/50 text-gray-400 hover:text-gray-300'
-                }`}
-              >
-                <span className="text-sm">{config.bypass ? 'Ignoré' : 'Normal'}</span>
               </button>
             </div>
 

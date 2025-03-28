@@ -248,7 +248,7 @@ function MainApp() {
     );
   };
 
-  const handleApplyResize = (dimensions: { width: number; height: number }) => {
+  const handleApplyResize = (dimensions: { width: number; height: number } | null) => {
     setOutputDimensions(dimensions);
   };
 

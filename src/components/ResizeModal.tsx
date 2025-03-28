@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import { X, Shield, AlertTriangle, Check, Settings2, Wand2, Power, SkipBack as Skip } from 'lucide-react';
+import { X, Shield, AlertTriangle, Check, Settings2, Wand2, Power } from 'lucide-react';
 
 interface ResizeModalProps {
   onClose: () => void;
-  onApply: (options: { width: number; height: number } | null) => void;
+  onApply: (options: { width: number; height: number; tool: string } | null) => void;
   initialConfig?: {
     enabled: boolean;
     dimensions: { width: number; height: number };
-    model: string;
-    bypass?: boolean;
+    tool: string;
   };
 }
 
@@ -23,8 +22,7 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
     return initialConfig || {
       enabled: false,
       dimensions: { width: 1000, height: 1500 },
-      model: 'imagemagick',
-      bypass: false
+      tool: 'imagemagick'
     };
   });
 
@@ -34,7 +32,8 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
     // Only pass dimensions if resizing is enabled
     onApply(config.enabled ? {
       width: parseInt(config.dimensions.width.toString()),
-      height: parseInt(config.dimensions.height.toString())
+      height: parseInt(config.dimensions.height.toString()),
+      tool: config.tool
     } : null);
   };
 
@@ -130,16 +129,16 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
                 {resizeOptions.map(option => (
                   <button
                     key={option.id}
-                    onClick={() => setConfig(prev => ({ ...prev, model: option.id }))}
+                    onClick={() => setConfig(prev => ({ ...prev, tool: option.id }))}
                     className={`p-3 rounded-lg border transition-all duration-300 text-left ${
-                      config.model === option.id
+                      config.tool === option.id
                         ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-500'
                         : 'bg-slate-800/50 border-gray-700/50 hover:border-gray-600/50'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-medium">{option.name}</span>
-                      {config.model === option.id && (
+                      {config.tool === option.id && (
                         <Check className="w-4 h-4" />
                       )}
                     </div>

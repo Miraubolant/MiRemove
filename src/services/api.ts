@@ -6,6 +6,13 @@ const MAX_RETRIES = 3;
 const BASE_TIMEOUT = 30000;
 const BACKOFF_FACTOR = 2;
 
+// Default resize parameters
+const DEFAULT_RESIZE_PARAMS = {
+  mode: 'fit',
+  keep_ratio: 'true',
+  resampling: 'hanning'
+};
+
 // Implement request queue with concurrency control
 class RequestQueue {
   private queue: (() => Promise<void>)[] = [];
@@ -110,7 +117,7 @@ const requestQueue = new RequestQueue(3);
 export async function removeBackground(
   file: File, 
   model: string = 'bria',
-  dimensions?: { width: number; height: number }
+  dimensions?: { width: number; height: number; tool?: string }
 ): Promise<string> {
   const startTime = performance.now();
   let success = false;
@@ -124,10 +131,19 @@ export async function removeBackground(
       formData.append("image", file);
       formData.append("model", model);
 
-      // Add dimensions if provided
+      // Add dimensions and resize parameters if provided
       if (dimensions) {
+        // Add dimensions
         formData.append("width", dimensions.width.toString());
         formData.append("height", dimensions.height.toString());
+        
+        // Add default resize parameters
+        Object.entries(DEFAULT_RESIZE_PARAMS).forEach(([key, value]) => {
+          formData.append(key, value);
+        });
+
+        // Add tool if specified, default to imagemagick
+        formData.append("tool", dimensions.tool || 'imagemagick');
       }
 
       const response = await fetchWithRetry(

@@ -29,7 +29,7 @@ function MainApp() {
   const [isDragging, setIsDragging] = useState(false);
   const [totalProcessed, setTotalProcessed] = useState(0);
   const [processingBatch, setProcessingBatch] = useState(false);
-  const [outputDimensions, setOutputDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [outputDimensions, setOutputDimensions] = useState<{ width: number; height: number; tool?: string } | null>(null);
   const [hasWhiteBackground, setHasWhiteBackground] = useState(false);
   const [totalToProcess, setTotalToProcess] = useState(0);
   const [showLimitModal, setShowLimitModal] = useState(false);
@@ -248,7 +248,7 @@ function MainApp() {
     );
   };
 
-  const handleApplyResize = (dimensions: { width: number; height: number } | null) => {
+  const handleApplyResize = (dimensions: { width: number; height: number; tool: string } | null) => {
     setOutputDimensions(dimensions);
   };
 

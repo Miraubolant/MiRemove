@@ -105,6 +105,18 @@ class LRUCache {
 const requestQueue = new RequestQueue(3);
 const cache = new LRUCache(50);
 
+// Get resize configuration from localStorage
+function getResizeConfig() {
+  const saved = localStorage.getItem('resize-config');
+  if (!saved) return null;
+  try {
+    return JSON.parse(saved);
+  } catch (err) {
+    console.error('Error parsing resize config:', err);
+    return null;
+  }
+}
+
 // Implement request timeout and retry with exponential backoff
 async function fetchWithRetry(
   url: string,
@@ -141,7 +153,6 @@ async function fetchWithRetry(
         throw error;
       }
 
-      // Exponential backoff with jitter
       const jitter = Math.random() * 1000;
       await new Promise(resolve => setTimeout(resolve, timeout + jitter));
       timeout *= backoffFactor;
@@ -163,8 +174,7 @@ function generateCacheKey(file: File, model: string, dimensions?: { width: numbe
 export async function removeBackground(
   file: File, 
   model: string = 'bria',
-  dimensions?: { width: number; height: number },
-  resizeOption?: { type: string; width: number; height: number }
+  dimensions?: { width: number; height: number }
 ): Promise<string> {
   const startTime = performance.now();
   let success = false;
@@ -178,10 +188,14 @@ export async function removeBackground(
       return cachedResult;
     }
 
+    // Get resize configuration
+    const resizeConfig = getResizeConfig();
+    const shouldResize = resizeConfig?.enabled && resizeConfig?.dimensions;
+
     // Compress image before processing
     const compressedFile = await compressImage(file, {
-      maxWidth: dimensions?.width || 2048,
-      maxHeight: dimensions?.height || 2048,
+      maxWidth: shouldResize ? resizeConfig.dimensions.width : (dimensions?.width || 2048),
+      maxHeight: shouldResize ? resizeConfig.dimensions.height : (dimensions?.height || 2048),
       quality: 0.8,
       maxSizeMB: 10
     });
@@ -194,30 +208,12 @@ export async function removeBackground(
       formData.append("image", compressedFile);
       formData.append("model", model);
 
-      // If resize option is selected, process with XnConvert API first
-      if (resizeOption && resizeOption.type !== 'none') {
-        const resizeFormData = new FormData();
-        resizeFormData.append("image", compressedFile);
-        resizeFormData.append("width", resizeOption.width.toString());
-        resizeFormData.append("height", resizeOption.height.toString());
-        resizeFormData.append("format", "jpg");
-        resizeFormData.append("resize_mode", "fit");
-        resizeFormData.append("keep_ratio", "true");
-        resizeFormData.append("resampling", "hanning");
-        resizeFormData.append("crop_position", "center");
-        resizeFormData.append("bg_color", "white");
-        resizeFormData.append("bg_alpha", "255");
-
-        const resizeResponse = await fetchWithRetry(
-          `https://xnconvert.miraubolant.com/process/${resizeOption.type}`,
-          {
-            method: 'POST',
-            body: resizeFormData,
-          }
-        );
-
-        const resizedBlob = await resizeResponse.blob();
-        formData.set("image", resizedBlob);
+      // If resize is enabled, add resize parameters
+      if (shouldResize) {
+        formData.append("resize", "true");
+        formData.append("resize_width", resizeConfig.dimensions.width.toString());
+        formData.append("resize_height", resizeConfig.dimensions.height.toString());
+        formData.append("resize_model", resizeConfig.model);
       }
 
       const response = await fetchWithRetry(

@@ -5,7 +5,7 @@ const API_URL = 'https://api.miraubolant.com/remove-background';
 const RESIZE_PARAMS = {
   mode: 'fit',
   keep_ratio: 'true',
-  resampling: 'hanning'
+  resampling: 'lanczos'
 } as const;
 const MAX_RETRIES = 3;
 const BASE_TIMEOUT = 30000;
@@ -125,25 +125,26 @@ export async function removeBackground(
 
     // Queue the API request with retries
     await requestQueue.add(async () => {
-      const formData = new FormData();
-      formData.append("image", file);
-      formData.append("model", model);
-
       // Build URL with query parameters for resizing
-      let url = API_URL;
+      const queryParams = new URLSearchParams({
+        model,
+        ...RESIZE_PARAMS
+      });
+
+      // Add resize parameters if provided
       if (dimensions) {
-        const queryParams = new URLSearchParams({
-          width: dimensions.width.toString(),
-          height: dimensions.height.toString(),
-          ...RESIZE_PARAMS
-        });
-        
+        queryParams.set('width', dimensions.width.toString());
+        queryParams.set('height', dimensions.height.toString());
         if (dimensions.tool) {
-          queryParams.append("tool", dimensions.tool);
+          queryParams.set('tool', dimensions.tool);
         }
-        
-        url = `${url}?${queryParams.toString()}`;
       }
+
+      const url = `${API_URL}?${queryParams.toString()}`;
+
+      // Create form data with just the image
+      const formData = new FormData();
+      formData.append('image', file);
 
       const response = await fetchWithRetry(
         url,

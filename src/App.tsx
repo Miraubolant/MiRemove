@@ -248,6 +248,10 @@ function MainApp() {
     );
   };
 
+  const handleApplyResize = (dimensions: { width: number; height: number }) => {
+    setOutputDimensions(dimensions);
+  };
+
   const hasPendingFiles = selectedFiles.some(f => f.status === 'pending');
   const hasCompletedFiles = selectedFiles.some(f => f.status === 'completed');
   const pendingCount = selectedFiles.filter(f => f.status === 'pending').length;
@@ -280,6 +284,8 @@ function MainApp() {
             totalToProcess={totalToProcess}
             completed={totalProcessed}
             pendingCount={pendingCount}
+            onApplyResize={handleApplyResize}
+            outputDimensions={outputDimensions}
           />
         </div>
 

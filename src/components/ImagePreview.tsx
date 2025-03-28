@@ -58,6 +58,12 @@ export function ImagePreview({
                   <Maximize2 className="w-3 h-3 text-emerald-500" />
                   <span>{dimensionsText}</span>
                 </div>
+                {outputDimensions && (
+                  <div className="text-xs bg-emerald-500/10 text-emerald-500 py-1.5 px-2.5 rounded-lg flex items-center gap-2">
+                    <span>→</span>
+                    <span>{outputDimensions.width}×{outputDimensions.height}</span>
+                  </div>
+                )}
                 <div className="text-xs text-gray-500">
                   {formatFileSize(file.file.size)}
                 </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ImageIcon, Download, PaintBucket, Clock, Trash2 } from 'lucide-react';
+import { ImageIcon, Download, PaintBucket, Clock, Trash2, Maximize2 } from 'lucide-react';
 import { AuthModal } from './AuthModal';
+import { ResizeModal } from './ResizeModal';
 import { useAuthStore } from '../stores/authStore';
 import { ProgressBar } from './ProgressBar';
 import { useAdminSettingsStore } from '../stores/adminSettingsStore';
@@ -17,6 +18,8 @@ interface ModelSelectorProps {
   totalToProcess?: number;
   completed?: number;
   pendingCount?: number;
+  onApplyResize?: (dimensions: { width: number; height: number }) => void;
+  outputDimensions?: { width: number; height: number } | null;
 }
 
 export function ModelSelector({ 
@@ -30,10 +33,13 @@ export function ModelSelector({
   isProcessing,
   totalToProcess = 0,
   completed = 0,
-  pendingCount = 0
+  pendingCount = 0,
+  onApplyResize,
+  outputDimensions
 }: ModelSelectorProps) {
   const { user } = useAuthStore();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showResizeModal, setShowResizeModal] = useState(false);
   const { settings } = useAdminSettingsStore();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -66,6 +72,22 @@ export function ModelSelector({
         )}
 
         <div className="flex gap-2">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowResizeModal(true)}
+              className="h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600"
+              title="Redimensionner les images"
+            >
+              <Maximize2 className="w-5 h-5" />
+            </button>
+            {outputDimensions && (
+              <div className="absolute -top-3 -right-3 bg-emerald-500 text-white text-xs px-2 py-1 rounded-full shadow-lg">
+                {outputDimensions.width}×{outputDimensions.height}
+              </div>
+            )}
+          </div>
+
           <button
             type="button"
             onClick={onApplyWhiteBackground}
@@ -130,6 +152,23 @@ export function ModelSelector({
 
       {showAuthModal && (
         <AuthModal onClose={() => setShowAuthModal(false)} />
+      )}
+
+      {showResizeModal && (
+        <ResizeModal
+          onClose={() => setShowResizeModal(false)}
+          onApply={(dimensions) => {
+            if (onApplyResize) {
+              onApplyResize(dimensions);
+            }
+            setShowResizeModal(false);
+          }}
+          initialConfig={outputDimensions ? {
+            enabled: true,
+            dimensions: outputDimensions,
+            model: 'imagemagick'
+          } : undefined}
+        />
       )}
     </div>
   );

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { X, Maximize2, Check, Settings2, Wand2, Power, SkipBack as Skip } from 'lucide-react';
+import { X, Shield, AlertTriangle, Check, Settings2, Wand2, Power, SkipBack as Skip } from 'lucide-react';
 
 interface ResizeModalProps {
   onClose: () => void;
-  onApply: (options: { type: string; width: number; height: number; enabled: boolean; bypass: boolean }) => void;
+  onApply: (options: { width: number; height: number }) => void;
   initialConfig?: {
     enabled: boolean;
     dimensions: { width: number; height: number };
@@ -15,7 +15,6 @@ interface ResizeModalProps {
 const resizeOptions = [
   { id: 'imagemagick', name: 'ImageMagick', description: 'Haute qualité, polyvalent' },
   { id: 'graphicsmagick', name: 'GraphicsMagick', description: 'Rapide et efficace' },
-  { id: 'ffmpeg', name: 'FFmpeg', description: 'Optimisé pour les grands volumes' },
   { id: 'pillow', name: 'Pillow', description: 'Simple et léger' }
 ];
 
@@ -33,11 +32,8 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
     if (!config.dimensions.width || !config.dimensions.height) return;
     
     onApply({
-      type: config.model,
       width: parseInt(config.dimensions.width.toString()),
-      height: parseInt(config.dimensions.height.toString()),
-      enabled: config.enabled,
-      bypass: config.bypass
+      height: parseInt(config.dimensions.height.toString())
     });
   };
 
@@ -49,7 +45,7 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="bg-emerald-500/10 p-2 rounded-lg">
-                <Maximize2 className="w-5 h-5 text-emerald-500" />
+                <Settings2 className="w-5 h-5 text-emerald-500" />
               </div>
               <h3 className="text-lg font-medium text-gray-200">
                 Redimensionnement
@@ -120,7 +116,7 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
                     value={config.dimensions.width}
                     onChange={(e) => setConfig(prev => ({
                       ...prev,
-                      dimensions: { ...prev.dimensions, width: e.target.value }
+                      dimensions: { ...prev.dimensions, width: parseInt(e.target.value) || 0 }
                     }))}
                     placeholder="ex: 1920"
                     className="w-full bg-slate-800/50 border border-gray-700/50 rounded-lg px-4 py-2.5 text-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
@@ -135,7 +131,7 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
                     value={config.dimensions.height}
                     onChange={(e) => setConfig(prev => ({
                       ...prev,
-                      dimensions: { ...prev.dimensions, height: e.target.value }
+                      dimensions: { ...prev.dimensions, height: parseInt(e.target.value) || 0 }
                     }))}
                     placeholder="ex: 1080"
                     className="w-full bg-slate-800/50 border border-gray-700/50 rounded-lg px-4 py-2.5 text-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"

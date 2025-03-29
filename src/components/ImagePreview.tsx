@@ -56,7 +56,7 @@ export function ImagePreview({
         return (
           <div className="text-xs bg-blue-500/10 text-blue-400 py-1.5 px-2.5 rounded-lg flex items-center gap-2">
             <Maximize2 className="w-3 h-3" />
-            <span>Redimensionné</span>
+            <span>Redimensionné {outputDimensions?.width}×{outputDimensions?.height}</span>
           </div>
         );
       case 'ai':
@@ -70,7 +70,7 @@ export function ImagePreview({
         return (
           <div className="text-xs bg-emerald-500/10 text-emerald-500 py-1.5 px-2.5 rounded-lg flex items-center gap-2">
             <Wand2 className="w-3 h-3" />
-            <span>IA + Redim</span>
+            <span>IA + {outputDimensions?.width}×{outputDimensions?.height}</span>
           </div>
         );
       default:
@@ -85,6 +85,12 @@ export function ImagePreview({
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
+                {/* Original dimensions badge - always shown */}
+                <div className="text-xs bg-slate-800/80 text-gray-300 py-1.5 px-2.5 rounded-lg flex items-center gap-2">
+                  <Maximize2 className="w-3 h-3 text-emerald-500" />
+                  <span>{dimensionsText}</span>
+                </div>
+                {/* Processing mode badge */}
                 {getProcessingBadge()}
               </div>
             </div>
@@ -129,10 +135,6 @@ export function ImagePreview({
                 <p className="text-xs">
                   <span className="text-gray-400">Taille : </span>
                   <span className="text-gray-300">{formatFileSize(file.file.size)}</span>
-                </p>
-                <p className="text-xs">
-                  <span className="text-gray-400">Dimensions : </span>
-                  <span className="text-gray-300">{dimensionsText}</span>
                 </p>
                 <p className="text-xs">
                   <span className="text-gray-400">Status : </span>

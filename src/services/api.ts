@@ -202,6 +202,7 @@ export async function removeBackground(
 ): Promise<string> {
   const startTime = performance.now();
   let success = false;
+  let shouldTrackStats = false; // Only track stats for AI processing
 
   try {
     let resultBlob: Blob;
@@ -209,13 +210,15 @@ export async function removeBackground(
     // Queue the API requests with retries
     await requestQueue.add(async () => {
       if (dimensions?.mode === 'resize') {
-        // Only resize
+        // Only resize - don't track stats
         resultBlob = await resizeImage(file, dimensions, file.name);
       } else if (dimensions?.mode === 'ai') {
-        // Only AI processing
+        // Only AI processing - track stats
+        shouldTrackStats = true;
         resultBlob = await removeBackgroundOnly(file, model);
       } else {
-        // Both resize and AI (default)
+        // Both resize and AI - track stats
+        shouldTrackStats = true;
         resultBlob = await removeBackgroundOnly(file, model);
         if (dimensions) {
           resultBlob = await resizeImage(resultBlob, dimensions, file.name);
@@ -232,12 +235,15 @@ export async function removeBackground(
     console.error('Error processing image:', error);
     throw new Error(error.message || 'Failed to process image');
   } finally {
-    const processingTime = (performance.now() - startTime) / 1000;
-    window.dispatchEvent(new CustomEvent('imageProcessed', {
-      detail: {
-        success,
-        processingTime
-      }
-    }));
+    // Only dispatch stats event if we performed AI processing
+    if (shouldTrackStats) {
+      const processingTime = (performance.now() - startTime) / 1000;
+      window.dispatchEvent(new CustomEvent('imageProcessed', {
+        detail: {
+          success,
+          processingTime
+        }
+      }));
+    }
   }
 }

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { ImageIcon, Download, PaintBucket, Clock, Trash2, Maximize2, Crop } from 'lucide-react';
+import { ImageIcon, Download, PaintBucket, Clock, Trash2, Maximize2 } from 'lucide-react';
 import { AuthModal } from './AuthModal';
 import { ResizeModal } from './ResizeModal';
 import { useAuthStore } from '../stores/authStore';
-import { ProgressBar } from './ProgressBar';
 import { useAdminSettingsStore } from '../stores/adminSettingsStore';
+import { ProgressBar } from './ProgressBar';
 
 interface ModelSelectorProps {
   onSubmit: (e: React.FormEvent) => void;
@@ -18,10 +18,8 @@ interface ModelSelectorProps {
   totalToProcess?: number;
   completed?: number;
   pendingCount?: number;
-  onApplyResize?: (dimensions: { width: number; height: number; tool: string } | null) => void;
-  outputDimensions?: { width: number; height: number; tool?: string } | null;
-  resizeOnly?: boolean;
-  onToggleResizeOnly?: (enabled: boolean) => void;
+  onApplyResize?: (dimensions: { width: number; height: number; tool: string; resizeOnly?: boolean } | null) => void;
+  outputDimensions?: { width: number; height: number; tool?: string; resizeOnly?: boolean } | null;
 }
 
 export function ModelSelector({ 
@@ -37,9 +35,7 @@ export function ModelSelector({
   completed = 0,
   pendingCount = 0,
   onApplyResize,
-  outputDimensions,
-  resizeOnly = false,
-  onToggleResizeOnly
+  outputDimensions
 }: ModelSelectorProps) {
   const { user } = useAuthStore();
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -54,6 +50,13 @@ export function ModelSelector({
     }
     onSubmit(e);
   };
+
+  const handleResizeClick = () => {
+    setShowResizeModal(true);
+  };
+
+  const isResizeEnabled = outputDimensions?.width && outputDimensions?.height;
+  const isResizeOnly = outputDimensions?.resizeOnly ?? false;
 
   return (
     <div className="flex items-center gap-4">
@@ -79,9 +82,9 @@ export function ModelSelector({
           <div className="relative">
             <button
               type="button"
-              onClick={() => setShowResizeModal(true)}
+              onClick={handleResizeClick}
               className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${
-                outputDimensions 
+                isResizeEnabled
                   ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600'
                   : 'bg-slate-700 hover:bg-slate-600 text-white'
               }`}
@@ -95,19 +98,6 @@ export function ModelSelector({
               </div>
             )}
           </div>
-
-          <button
-            type="button"
-            onClick={() => onToggleResizeOnly?.(!resizeOnly)}
-            className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${
-              resizeOnly
-                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white'
-                : 'bg-slate-700 hover:bg-slate-600 text-white'
-            }`}
-            title={resizeOnly ? "Activer le traitement IA" : "Redimensionnement uniquement"}
-          >
-            <Crop className="w-5 h-5" />
-          </button>
 
           <button
             type="button"
@@ -164,7 +154,7 @@ export function ModelSelector({
             <div className="flex items-center gap-2">
               <ImageIcon className="w-5 h-5" />
               <span>
-                {!user ? "Se connecter pour traiter" : (resizeOnly ? "Redimensionner les images" : "Traiter les images")}
+                {!user ? "Se connecter pour traiter" : (isResizeOnly ? "Redimensionner les images" : "Redimensionnement + IA")}
               </span>
             </div>
           </button>
@@ -187,7 +177,8 @@ export function ModelSelector({
           initialConfig={outputDimensions ? {
             enabled: true,
             dimensions: outputDimensions,
-            tool: outputDimensions.tool || 'imagemagick'
+            tool: outputDimensions.tool || 'imagemagick',
+            resizeOnly: outputDimensions.resizeOnly
           } : undefined}
         />
       )}

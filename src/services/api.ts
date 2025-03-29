@@ -162,14 +162,18 @@ async function removeBackgroundOnly(file: File, model: string = 'bria'): Promise
 }
 
 // Function to resize image
-async function resizeImage(blob: Blob, dimensions: { width: number; height: number; tool?: string }, originalName: string): Promise<Blob> {
-  // Convert to JPG first
-  const jpgBlob = await convertToJPG(blob, originalName);
-  
+async function resizeImage(file: File | Blob, dimensions: { width: number; height: number; tool?: string }, originalName: string): Promise<Blob> {
   const formData = new FormData();
-  // Use original filename but change extension to .jpg
-  const fileName = originalName.substring(0, originalName.lastIndexOf('.')) + '.jpg';
-  formData.append('image', jpgBlob, fileName);
+  
+  // If it's a Blob from background removal, convert to JPG first
+  const imageToUpload = file instanceof File ? file : await convertToJPG(file, originalName);
+  
+  // Use original filename but change extension to .jpg if it's a blob
+  const fileName = file instanceof File 
+    ? originalName 
+    : originalName.substring(0, originalName.lastIndexOf('.')) + '.jpg';
+  
+  formData.append('image', imageToUpload, fileName);
 
   const queryParams = new URLSearchParams({
     width: dimensions.width.toString(),
@@ -194,8 +198,7 @@ async function resizeImage(blob: Blob, dimensions: { width: number; height: numb
 export async function removeBackground(
   file: File, 
   model: string = 'bria',
-  dimensions?: { width: number; height: number; tool?: string },
-  resizeOnly: boolean = false
+  dimensions?: { width: number; height: number; tool?: string; resizeOnly?: boolean } | null
 ): Promise<string> {
   const startTime = performance.now();
   let success = false;
@@ -205,7 +208,7 @@ export async function removeBackground(
 
     // Queue the API requests with retries
     await requestQueue.add(async () => {
-      if (resizeOnly && dimensions) {
+      if (dimensions?.resizeOnly) {
         // Skip background removal and only resize
         resultBlob = await resizeImage(file, dimensions, file.name);
       } else {

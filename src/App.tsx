@@ -29,14 +29,13 @@ function MainApp() {
   const [isDragging, setIsDragging] = useState(false);
   const [totalProcessed, setTotalProcessed] = useState(0);
   const [processingBatch, setProcessingBatch] = useState(false);
-  const [outputDimensions, setOutputDimensions] = useState<{ width: number; height: number; tool?: string } | null>(null);
+  const [outputDimensions, setOutputDimensions] = useState<{ width: number; height: number; tool?: string; resizeOnly?: boolean } | null>(null);
   const [hasWhiteBackground, setHasWhiteBackground] = useState(false);
   const [totalToProcess, setTotalToProcess] = useState(0);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [isImageLimit, setIsImageLimit] = useState(false);
-  const [resizeOnly, setResizeOnly] = useState(false);
   const { incrementCount, canProcess, remainingProcesses } = useUsageStore();
   const { user } = useAuthStore();
   const { settings } = useAdminSettingsStore();
@@ -103,7 +102,7 @@ function MainApp() {
     );
 
     try {
-      const result = await removeBackground(file.file, selectedModel, outputDimensions, resizeOnly);
+      const result = await removeBackground(file.file, selectedModel, outputDimensions);
       setSelectedFiles(prev => 
         prev.map(f => f.id === file.id ? {...f, status: 'completed', result, model: selectedModel} : f)
       );
@@ -251,7 +250,7 @@ function MainApp() {
     );
   };
 
-  const handleApplyResize = (dimensions: { width: number; height: number; tool: string } | null) => {
+  const handleApplyResize = (dimensions: { width: number; height: number; tool: string; resizeOnly?: boolean } | null) => {
     setOutputDimensions(dimensions);
   };
 
@@ -289,8 +288,6 @@ function MainApp() {
             pendingCount={pendingCount}
             onApplyResize={handleApplyResize}
             outputDimensions={outputDimensions}
-            resizeOnly={resizeOnly}
-            onToggleResizeOnly={setResizeOnly}
           />
         </div>
 

@@ -3,37 +3,34 @@ import { X, Shield, AlertTriangle, Check, Settings2, Wand2, Power } from 'lucide
 
 interface ResizeModalProps {
   onClose: () => void;
-  onApply: (options: { width: number; height: number; tool: string } | null) => void;
+  onApply: (options: { width: number; height: number; tool: string; resizeOnly?: boolean } | null) => void;
   initialConfig?: {
     enabled: boolean;
     dimensions: { width: number; height: number };
     tool: string;
+    resizeOnly?: boolean;
   };
 }
-
-const resizeOptions = [
-  { id: 'imagemagick', name: 'ImageMagick', description: 'Haute qualité, polyvalent' },
-  { id: 'graphicsmagick', name: 'GraphicsMagick', description: 'Rapide et efficace' },
-  { id: 'pillow', name: 'Pillow', description: 'Simple et léger' }
-];
 
 export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProps) {
   const [config, setConfig] = useState(() => {
     return initialConfig || {
       enabled: false,
       dimensions: { width: 1000, height: 1500 },
-      tool: 'imagemagick'
+      tool: 'imagemagick',
+      resizeOnly: false
     };
   });
 
   const handleApply = () => {
     if (!config.dimensions.width || !config.dimensions.height) return;
     
-    // Only pass dimensions if resizing is enabled
+    // Pass dimensions and resizeOnly flag if enabled
     onApply(config.enabled ? {
       width: parseInt(config.dimensions.width.toString()),
       height: parseInt(config.dimensions.height.toString()),
-      tool: config.tool
+      tool: 'imagemagick',
+      resizeOnly: config.resizeOnly
     } : null);
   };
 
@@ -79,6 +76,27 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
               </button>
             </div>
 
+            {/* Processing Mode */}
+            <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg border border-gray-700/50">
+              <div className="flex items-center gap-3">
+                <Wand2 className="w-5 h-5 text-emerald-500" />
+                <div>
+                  <h4 className="font-medium text-gray-200">Mode de traitement</h4>
+                  <p className="text-sm text-gray-400">Choisir le type de traitement</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setConfig(prev => ({ ...prev, resizeOnly: !prev.resizeOnly }))}
+                className={`px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors ${
+                  !config.resizeOnly
+                    ? 'bg-emerald-500/20 text-emerald-500'
+                    : 'bg-gray-700/50 text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                <span className="text-sm">{config.resizeOnly ? 'Redimensionnement uniquement' : 'Redimensionnement + IA'}</span>
+              </button>
+            </div>
+
             {/* Dimensions */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
@@ -116,35 +134,6 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
                     className="w-full bg-slate-800/50 border border-gray-700/50 rounded-lg px-4 py-2.5 text-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                   />
                 </div>
-              </div>
-            </div>
-
-            {/* Engine Selection */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Wand2 className="w-4 h-4 text-emerald-500" />
-                <h4 className="text-sm font-medium text-gray-300">Moteur</h4>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {resizeOptions.map(option => (
-                  <button
-                    key={option.id}
-                    onClick={() => setConfig(prev => ({ ...prev, tool: option.id }))}
-                    className={`p-3 rounded-lg border transition-all duration-300 text-left ${
-                      config.tool === option.id
-                        ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-500'
-                        : 'bg-slate-800/50 border-gray-700/50 hover:border-gray-600/50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">{option.name}</span>
-                      {config.tool === option.id && (
-                        <Check className="w-4 h-4" />
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-400 mt-1">{option.description}</p>
-                  </button>
-                ))}
               </div>
             </div>
           </div>

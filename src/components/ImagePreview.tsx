@@ -10,7 +10,7 @@ interface ImagePreviewProps {
   onRemove: (id: string) => void;
   onBackgroundColorChange?: (id: string, color: string) => void;
   onProcess: (file: ImageFile) => Promise<void>;
-  outputDimensions?: { width: number; height: number; tool?: string } | null;
+  outputDimensions?: { width: number; height: number; tool?: string; mode?: 'resize' | 'ai' | 'both' } | null;
 }
 
 export function ImagePreview({ 
@@ -47,6 +47,9 @@ export function ImagePreview({
     await onProcess(file);
   };
 
+  // Only show dimensions badge if mode is 'resize' or 'both'
+  const shouldShowDimensions = outputDimensions?.mode && ['resize', 'both'].includes(outputDimensions.mode);
+
   return (
     <>
       <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl border border-gray-700 w-full">
@@ -58,7 +61,7 @@ export function ImagePreview({
                   <Maximize2 className="w-3 h-3 text-emerald-500" />
                   <span>{dimensionsText}</span>
                 </div>
-                {outputDimensions && (
+                {shouldShowDimensions && outputDimensions && (
                   <div className="text-xs bg-emerald-500/10 text-emerald-500 py-1.5 px-2.5 rounded-lg flex items-center gap-2">
                     <span>→</span>
                     <span>{outputDimensions.width}×{outputDimensions.height}</span>

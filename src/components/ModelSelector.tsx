@@ -55,7 +55,9 @@ export function ModelSelector({
     setShowResizeModal(true);
   };
 
-  const isResizeEnabled = outputDimensions?.width && outputDimensions?.height && outputDimensions.mode !== 'ai';
+  // Only show dimensions badge if mode is 'resize' or 'both'
+  const shouldShowDimensions = outputDimensions?.mode && ['resize', 'both'].includes(outputDimensions.mode);
+
   const mode = outputDimensions?.mode || 'both';
 
   const getButtonText = () => {
@@ -94,7 +96,7 @@ export function ModelSelector({
               type="button"
               onClick={handleResizeClick}
               className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${
-                isResizeEnabled
+                outputDimensions 
                   ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600'
                   : 'bg-slate-700 hover:bg-slate-600 text-white'
               }`}
@@ -102,9 +104,9 @@ export function ModelSelector({
             >
               <Maximize2 className="w-5 h-5" />
             </button>
-            {isResizeEnabled && (
+            {shouldShowDimensions && outputDimensions && (
               <div className="absolute -top-3 -right-3 bg-emerald-500 text-white text-xs px-2 py-1 rounded-full shadow-lg">
-                {outputDimensions?.width}×{outputDimensions?.height}
+                {outputDimensions.width}×{outputDimensions.height}
               </div>
             )}
           </div>
@@ -132,7 +134,7 @@ export function ModelSelector({
                 ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600'
                 : 'bg-slate-700 opacity-50 cursor-not-allowed hover:scale-100'
             }`}
-            title="Tout télécharger en JPG"
+            title="Télécharger en JPG"
           >
             <Download className="w-5 h-5" />
           </button>

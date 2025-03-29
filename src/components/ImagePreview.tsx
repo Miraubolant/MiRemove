@@ -47,9 +47,6 @@ export function ImagePreview({
     await onProcess(file);
   };
 
-  // Only show dimensions badge if mode is 'resize' or 'both'
-  const shouldShowDimensions = outputDimensions?.mode && ['resize', 'both'].includes(outputDimensions.mode);
-
   // Get processing mode badge text
   const getProcessingBadge = () => {
     if (!file.processingMode || file.status !== 'completed') return null;
@@ -88,16 +85,6 @@ export function ImagePreview({
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <div className="text-xs bg-slate-800/80 text-gray-300 py-1.5 px-2.5 rounded-lg flex items-center gap-2">
-                  <Maximize2 className="w-3 h-3 text-emerald-500" />
-                  <span>{dimensionsText}</span>
-                </div>
-                {shouldShowDimensions && outputDimensions && (
-                  <div className="text-xs bg-emerald-500/10 text-emerald-500 py-1.5 px-2.5 rounded-lg flex items-center gap-2">
-                    <span>→</span>
-                    <span>{outputDimensions.width}×{outputDimensions.height}</span>
-                  </div>
-                )}
                 {getProcessingBadge()}
               </div>
             </div>
@@ -142,6 +129,10 @@ export function ImagePreview({
                 <p className="text-xs">
                   <span className="text-gray-400">Taille : </span>
                   <span className="text-gray-300">{formatFileSize(file.file.size)}</span>
+                </p>
+                <p className="text-xs">
+                  <span className="text-gray-400">Dimensions : </span>
+                  <span className="text-gray-300">{dimensionsText}</span>
                 </p>
                 <p className="text-xs">
                   <span className="text-gray-400">Status : </span>

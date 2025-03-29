@@ -20,6 +20,7 @@ export interface ImageFile {
       height: number;
     };
   };
+  processingMode?: 'resize' | 'ai' | 'both';
 }
 
 export interface Model {

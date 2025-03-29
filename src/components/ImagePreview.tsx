@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Loader2, X, Info, ZoomIn, SplitSquareVertical, Play, Check, Maximize2 } from 'lucide-react';
+import { Loader2, X, Info, ZoomIn, SplitSquareVertical, Play, Check, Maximize2, Wand2 } from 'lucide-react';
 import { ImageFile } from '../types';
 import { ImageModal } from './ImageModal';
 import { AuthModal } from './AuthModal';
@@ -50,6 +50,37 @@ export function ImagePreview({
   // Only show dimensions badge if mode is 'resize' or 'both'
   const shouldShowDimensions = outputDimensions?.mode && ['resize', 'both'].includes(outputDimensions.mode);
 
+  // Get processing mode badge text
+  const getProcessingBadge = () => {
+    if (!file.processingMode || file.status !== 'completed') return null;
+    
+    switch (file.processingMode) {
+      case 'resize':
+        return (
+          <div className="text-xs bg-blue-500/10 text-blue-400 py-1.5 px-2.5 rounded-lg flex items-center gap-2">
+            <Maximize2 className="w-3 h-3" />
+            <span>Redimensionné</span>
+          </div>
+        );
+      case 'ai':
+        return (
+          <div className="text-xs bg-purple-500/10 text-purple-400 py-1.5 px-2.5 rounded-lg flex items-center gap-2">
+            <Wand2 className="w-3 h-3" />
+            <span>IA</span>
+          </div>
+        );
+      case 'both':
+        return (
+          <div className="text-xs bg-emerald-500/10 text-emerald-500 py-1.5 px-2.5 rounded-lg flex items-center gap-2">
+            <Wand2 className="w-3 h-3" />
+            <span>IA + Redim</span>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <>
       <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl border border-gray-700 w-full">
@@ -67,6 +98,7 @@ export function ImagePreview({
                     <span>{outputDimensions.width}×{outputDimensions.height}</span>
                   </div>
                 )}
+                {getProcessingBadge()}
               </div>
             </div>
 

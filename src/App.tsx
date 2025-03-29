@@ -63,7 +63,8 @@ function MainApp() {
       status: 'pending' as const,
       preview: URL.createObjectURL(file),
       backgroundColor: hasWhiteBackground ? '#FFFFFF' : 'transparent',
-      model: selectedModel
+      model: selectedModel,
+      processingMode: outputDimensions?.mode || 'ai'
     }));
 
     const filesWithMetadata = await loadImagesMetadata(newFiles);
@@ -109,7 +110,13 @@ function MainApp() {
     try {
       const result = await removeBackground(file.file, selectedModel, outputDimensions);
       setSelectedFiles(prev => 
-        prev.map(f => f.id === file.id ? {...f, status: 'completed', result, model: selectedModel} : f)
+        prev.map(f => f.id === file.id ? {
+          ...f,
+          status: 'completed',
+          result,
+          model: selectedModel,
+          processingMode: outputDimensions?.mode || 'ai'
+        } : f)
       );
       setTotalProcessed(prev => prev + 1);
       incrementCount();

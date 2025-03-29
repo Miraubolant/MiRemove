@@ -36,6 +36,7 @@ function MainApp() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [isImageLimit, setIsImageLimit] = useState(false);
+  const [resizeOnly, setResizeOnly] = useState(false);
   const { incrementCount, canProcess, remainingProcesses } = useUsageStore();
   const { user } = useAuthStore();
   const { settings } = useAdminSettingsStore();
@@ -102,7 +103,7 @@ function MainApp() {
     );
 
     try {
-      const result = await removeBackground(file.file, selectedModel, outputDimensions);
+      const result = await removeBackground(file.file, selectedModel, outputDimensions, resizeOnly);
       setSelectedFiles(prev => 
         prev.map(f => f.id === file.id ? {...f, status: 'completed', result, model: selectedModel} : f)
       );
@@ -288,6 +289,8 @@ function MainApp() {
             pendingCount={pendingCount}
             onApplyResize={handleApplyResize}
             outputDimensions={outputDimensions}
+            resizeOnly={resizeOnly}
+            onToggleResizeOnly={setResizeOnly}
           />
         </div>
 

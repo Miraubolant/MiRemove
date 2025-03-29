@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ImageIcon, Download, PaintBucket, Clock, Trash2, Maximize2 } from 'lucide-react';
+import { ImageIcon, Download, PaintBucket, Clock, Trash2, Maximize2, Crop } from 'lucide-react';
 import { AuthModal } from './AuthModal';
 import { ResizeModal } from './ResizeModal';
 import { useAuthStore } from '../stores/authStore';
@@ -20,6 +20,8 @@ interface ModelSelectorProps {
   pendingCount?: number;
   onApplyResize?: (dimensions: { width: number; height: number; tool: string } | null) => void;
   outputDimensions?: { width: number; height: number; tool?: string } | null;
+  resizeOnly?: boolean;
+  onToggleResizeOnly?: (enabled: boolean) => void;
 }
 
 export function ModelSelector({ 
@@ -35,7 +37,9 @@ export function ModelSelector({
   completed = 0,
   pendingCount = 0,
   onApplyResize,
-  outputDimensions
+  outputDimensions,
+  resizeOnly = false,
+  onToggleResizeOnly
 }: ModelSelectorProps) {
   const { user } = useAuthStore();
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -94,6 +98,19 @@ export function ModelSelector({
 
           <button
             type="button"
+            onClick={() => onToggleResizeOnly?.(!resizeOnly)}
+            className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${
+              resizeOnly
+                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white'
+                : 'bg-slate-700 hover:bg-slate-600 text-white'
+            }`}
+            title={resizeOnly ? "Activer le traitement IA" : "Redimensionnement uniquement"}
+          >
+            <Crop className="w-5 h-5" />
+          </button>
+
+          <button
+            type="button"
             onClick={onApplyWhiteBackground}
             disabled={!hasCompletedFiles}
             className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${
@@ -147,7 +164,7 @@ export function ModelSelector({
             <div className="flex items-center gap-2">
               <ImageIcon className="w-5 h-5" />
               <span>
-                {!user ? "Se connecter pour traiter" : "Traiter les images"}
+                {!user ? "Se connecter pour traiter" : (resizeOnly ? "Redimensionner les images" : "Traiter les images")}
               </span>
             </div>
           </button>

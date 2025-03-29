@@ -29,7 +29,12 @@ function MainApp() {
   const [isDragging, setIsDragging] = useState(false);
   const [totalProcessed, setTotalProcessed] = useState(0);
   const [processingBatch, setProcessingBatch] = useState(false);
-  const [outputDimensions, setOutputDimensions] = useState<{ width: number; height: number; tool?: string; resizeOnly?: boolean } | null>(null);
+  const [outputDimensions, setOutputDimensions] = useState<{ width: number; height: number; tool?: string; mode?: 'resize' | 'ai' | 'both' } | null>({
+    width: 1000,
+    height: 1500,
+    tool: 'imagemagick',
+    mode: 'ai'
+  });
   const [hasWhiteBackground, setHasWhiteBackground] = useState(false);
   const [totalToProcess, setTotalToProcess] = useState(0);
   const [showLimitModal, setShowLimitModal] = useState(false);
@@ -250,7 +255,7 @@ function MainApp() {
     );
   };
 
-  const handleApplyResize = (dimensions: { width: number; height: number; tool: string; resizeOnly?: boolean } | null) => {
+  const handleApplyResize = (dimensions: { width: number; height: number; tool: string; mode: 'resize' | 'ai' | 'both' } | null) => {
     setOutputDimensions(dimensions);
   };
 

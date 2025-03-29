@@ -198,7 +198,7 @@ async function resizeImage(file: File | Blob, dimensions: { width: number; heigh
 export async function removeBackground(
   file: File, 
   model: string = 'bria',
-  dimensions?: { width: number; height: number; tool?: string; resizeOnly?: boolean } | null
+  dimensions?: { width: number; height: number; tool?: string; mode?: 'resize' | 'ai' | 'both' } | null
 ): Promise<string> {
   const startTime = performance.now();
   let success = false;
@@ -208,14 +208,15 @@ export async function removeBackground(
 
     // Queue the API requests with retries
     await requestQueue.add(async () => {
-      if (dimensions?.resizeOnly) {
-        // Skip background removal and only resize
+      if (dimensions?.mode === 'resize') {
+        // Only resize
         resultBlob = await resizeImage(file, dimensions, file.name);
-      } else {
-        // First, remove the background
+      } else if (dimensions?.mode === 'ai') {
+        // Only AI processing
         resultBlob = await removeBackgroundOnly(file, model);
-
-        // Then, if dimensions are provided, resize the image
+      } else {
+        // Both resize and AI (default)
+        resultBlob = await removeBackgroundOnly(file, model);
         if (dimensions) {
           resultBlob = await resizeImage(resultBlob, dimensions, file.name);
         }

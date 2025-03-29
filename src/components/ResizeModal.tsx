@@ -3,34 +3,39 @@ import { X, Shield, AlertTriangle, Check, Settings2, Wand2, Power } from 'lucide
 
 interface ResizeModalProps {
   onClose: () => void;
-  onApply: (options: { width: number; height: number; tool: string; resizeOnly?: boolean } | null) => void;
+  onApply: (options: { width: number; height: number; tool: string; mode: 'resize' | 'ai' | 'both' } | null) => void;
   initialConfig?: {
     enabled: boolean;
     dimensions: { width: number; height: number };
     tool: string;
-    resizeOnly?: boolean;
+    mode: 'resize' | 'ai' | 'both';
   };
 }
+
+const processingModes = [
+  { id: 'resize', name: 'Redimensionnement', description: 'Redimensionner uniquement' },
+  { id: 'ai', name: 'Traitement IA', description: 'Supprimer l\'arrière-plan' },
+  { id: 'both', name: 'Redimensionnement + IA', description: 'Les deux traitements' }
+] as const;
 
 export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProps) {
   const [config, setConfig] = useState(() => {
     return initialConfig || {
-      enabled: false,
+      enabled: true,
       dimensions: { width: 1000, height: 1500 },
       tool: 'imagemagick',
-      resizeOnly: false
+      mode: 'ai' as const
     };
   });
 
   const handleApply = () => {
     if (!config.dimensions.width || !config.dimensions.height) return;
     
-    // Pass dimensions and resizeOnly flag if enabled
     onApply(config.enabled ? {
       width: parseInt(config.dimensions.width.toString()),
       height: parseInt(config.dimensions.height.toString()),
       tool: 'imagemagick',
-      resizeOnly: config.resizeOnly
+      mode: config.mode
     } : null);
   };
 
@@ -45,7 +50,7 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
                 <Settings2 className="w-5 h-5 text-emerald-500" />
               </div>
               <h3 className="text-lg font-medium text-gray-200">
-                Redimensionnement
+                Configuration du traitement
               </h3>
             </div>
             <button onClick={onClose} className="btn-icon">
@@ -60,7 +65,7 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
               <div className="flex items-center gap-3">
                 <Power className="w-5 h-5 text-emerald-500" />
                 <div>
-                  <h4 className="font-medium text-gray-200">Redimensionnement automatique</h4>
+                  <h4 className="font-medium text-gray-200">Traitement automatique</h4>
                   <p className="text-sm text-gray-400">Appliquer à toutes les images</p>
                 </div>
               </div>
@@ -77,24 +82,34 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
             </div>
 
             {/* Processing Mode */}
-            <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg border border-gray-700/50">
-              <div className="flex items-center gap-3">
-                <Wand2 className="w-5 h-5 text-emerald-500" />
-                <div>
-                  <h4 className="font-medium text-gray-200">Mode de traitement</h4>
-                  <p className="text-sm text-gray-400">Choisir le type de traitement</p>
-                </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Wand2 className="w-4 h-4 text-emerald-500" />
+                <h4 className="text-sm font-medium text-gray-300">Mode de traitement</h4>
               </div>
-              <button
-                onClick={() => setConfig(prev => ({ ...prev, resizeOnly: !prev.resizeOnly }))}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors ${
-                  !config.resizeOnly
-                    ? 'bg-emerald-500/20 text-emerald-500'
-                    : 'bg-gray-700/50 text-gray-400 hover:text-gray-300'
-                }`}
-              >
-                <span className="text-sm">{config.resizeOnly ? 'Redimensionnement uniquement' : 'Redimensionnement + IA'}</span>
-              </button>
+              <div className="grid grid-cols-1 gap-2">
+                {processingModes.map(mode => (
+                  <button
+                    key={mode.id}
+                    onClick={() => setConfig(prev => ({ ...prev, mode: mode.id }))}
+                    className={`p-4 rounded-lg border transition-all duration-300 text-left ${
+                      config.mode === mode.id
+                        ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-500'
+                        : 'bg-slate-800/50 border-gray-700/50 hover:border-gray-600/50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium">{mode.name}</div>
+                        <p className="text-xs text-gray-400 mt-1">{mode.description}</p>
+                      </div>
+                      {config.mode === mode.id && (
+                        <Check className="w-4 h-4 flex-shrink-0" />
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Dimensions */}

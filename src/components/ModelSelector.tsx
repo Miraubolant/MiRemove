@@ -18,8 +18,8 @@ interface ModelSelectorProps {
   totalToProcess?: number;
   completed?: number;
   pendingCount?: number;
-  onApplyResize?: (dimensions: { width: number; height: number; tool: string; resizeOnly?: boolean } | null) => void;
-  outputDimensions?: { width: number; height: number; tool?: string; resizeOnly?: boolean } | null;
+  onApplyResize?: (dimensions: { width: number; height: number; tool: string; mode: 'resize' | 'ai' | 'both' } | null) => void;
+  outputDimensions?: { width: number; height: number; tool?: string; mode?: 'resize' | 'ai' | 'both' } | null;
 }
 
 export function ModelSelector({ 
@@ -55,8 +55,18 @@ export function ModelSelector({
     setShowResizeModal(true);
   };
 
-  const isResizeEnabled = outputDimensions?.width && outputDimensions?.height;
-  const isResizeOnly = outputDimensions?.resizeOnly ?? false;
+  const isResizeEnabled = outputDimensions?.width && outputDimensions?.height && outputDimensions.mode !== 'ai';
+  const mode = outputDimensions?.mode || 'both';
+
+  const getButtonText = () => {
+    if (!user) return "Se connecter pour traiter";
+    switch (mode) {
+      case 'resize': return "Redimensionner les images";
+      case 'ai': return "Traitement IA";
+      case 'both': return "Redimensionnement + IA";
+      default: return "Traiter les images";
+    }
+  };
 
   return (
     <div className="flex items-center gap-4">
@@ -88,13 +98,13 @@ export function ModelSelector({
                   ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600'
                   : 'bg-slate-700 hover:bg-slate-600 text-white'
               }`}
-              title={outputDimensions ? "Modifier le redimensionnement" : "Redimensionner les images"}
+              title={outputDimensions ? "Modifier le traitement" : "Configurer le traitement"}
             >
               <Maximize2 className="w-5 h-5" />
             </button>
-            {outputDimensions && (
+            {isResizeEnabled && (
               <div className="absolute -top-3 -right-3 bg-emerald-500 text-white text-xs px-2 py-1 rounded-full shadow-lg">
-                {outputDimensions.width}×{outputDimensions.height}
+                {outputDimensions?.width}×{outputDimensions?.height}
               </div>
             )}
           </div>
@@ -153,9 +163,7 @@ export function ModelSelector({
           >
             <div className="flex items-center gap-2">
               <ImageIcon className="w-5 h-5" />
-              <span>
-                {!user ? "Se connecter pour traiter" : (isResizeOnly ? "Redimensionner les images" : "Redimensionnement + IA")}
-              </span>
+              <span>{getButtonText()}</span>
             </div>
           </button>
         </div>
@@ -178,7 +186,7 @@ export function ModelSelector({
             enabled: true,
             dimensions: outputDimensions,
             tool: outputDimensions.tool || 'imagemagick',
-            resizeOnly: outputDimensions.resizeOnly
+            mode: outputDimensions.mode || 'both'
           } : undefined}
         />
       )}

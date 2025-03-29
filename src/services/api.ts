@@ -57,7 +57,7 @@ class RequestQueue {
 }
 
 // Convert Blob to JPG format
-async function convertToJPG(blob: Blob): Promise<Blob> {
+async function convertToJPG(blob: Blob, originalName: string): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const canvas = document.createElement('canvas');
@@ -162,12 +162,14 @@ async function removeBackgroundOnly(file: File, model: string = 'bria'): Promise
 }
 
 // Function to resize image
-async function resizeImage(blob: Blob, dimensions: { width: number; height: number; tool?: string }): Promise<Blob> {
+async function resizeImage(blob: Blob, dimensions: { width: number; height: number; tool?: string }, originalName: string): Promise<Blob> {
   // Convert to JPG first
-  const jpgBlob = await convertToJPG(blob);
+  const jpgBlob = await convertToJPG(blob, originalName);
   
   const formData = new FormData();
-  formData.append('image', jpgBlob, 'image.jpg');
+  // Use original filename but change extension to .jpg
+  const fileName = originalName.substring(0, originalName.lastIndexOf('.')) + '.jpg';
+  formData.append('image', jpgBlob, fileName);
 
   const queryParams = new URLSearchParams({
     width: dimensions.width.toString(),
@@ -207,7 +209,7 @@ export async function removeBackground(
 
       // Then, if dimensions are provided, resize the image
       if (dimensions) {
-        resultBlob = await resizeImage(resultBlob, dimensions);
+        resultBlob = await resizeImage(resultBlob, dimensions, file.name);
       }
     });
 

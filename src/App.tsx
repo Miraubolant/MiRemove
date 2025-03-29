@@ -196,7 +196,9 @@ function MainApp() {
         canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.9);
       });
 
-      const fileName = `${file.file.name.split('.')[0]}.jpg`;
+      // Use original filename but change extension to .jpg
+      const originalName = file.file.name;
+      const fileName = originalName.substring(0, originalName.lastIndexOf('.')) + '.jpg';
       zip.file(fileName, blob);
     }
 

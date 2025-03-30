@@ -111,9 +111,17 @@ function MainApp() {
         prev.map(f => f.id === file.id ? {
           ...f,
           status: 'completed',
-          result,
+          result: result.url,
           model: selectedModel,
-          processingMode: outputDimensions?.mode || 'ai'
+          processingMode: outputDimensions?.mode || 'ai',
+          dimensions: {
+            width: result.width,
+            height: result.height,
+            original: f.dimensions?.original || {
+              width: result.width,
+              height: result.height
+            }
+          }
         } : f)
       );
       setTotalProcessed(prev => prev + 1);

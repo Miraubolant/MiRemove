@@ -5,7 +5,6 @@ export interface ImageFile {
   preview: string;
   result?: string;
   error?: string;
-  backgroundColor?: string;
   metadata?: {
     size: string;
     dimensions?: { width: number; height: number };

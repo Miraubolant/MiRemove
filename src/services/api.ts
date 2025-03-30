@@ -213,16 +213,18 @@ export async function removeBackground(
         // Only resize - don't track stats
         resultBlob = await resizeImage(file, dimensions, file.name);
       } else if (dimensions?.mode === 'ai') {
-        // Only AI processing - track stats
+        // Only AI processing - track stats and preserve original dimensions
         shouldTrackStats = true;
         resultBlob = await removeBackgroundOnly(file, model);
-      } else {
+      } else if (dimensions?.mode === 'both') {
         // Both resize and AI - track stats
         shouldTrackStats = true;
+        const aiProcessedBlob = await removeBackgroundOnly(file, model);
+        resultBlob = await resizeImage(aiProcessedBlob, dimensions, file.name);
+      } else {
+        // Default to AI only if no mode specified
+        shouldTrackStats = true;
         resultBlob = await removeBackgroundOnly(file, model);
-        if (dimensions) {
-          resultBlob = await resizeImage(resultBlob, dimensions, file.name);
-        }
       }
     });
 

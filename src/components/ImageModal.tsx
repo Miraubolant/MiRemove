@@ -7,12 +7,13 @@ interface ImageModalProps {
   imageUrl: string;
   originalUrl?: string;
   onClose: () => void;
+  processingMode?: 'resize' | 'ai' | 'both';
 }
 
 const DEFAULT_MODAL_WIDTH = 1600;
 const DEFAULT_MODAL_HEIGHT = 900;
 
-export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) {
+export function ImageModal({ imageUrl, originalUrl, onClose, processingMode }: ImageModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -29,6 +30,9 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
     el.setAttribute('id', 'modal-root');
     return el;
   });
+
+  // Determine if we should show white background
+  const shouldShowWhiteBackground = !showOriginal && (processingMode === 'ai' || processingMode === 'both');
 
   useEffect(() => {
     document.body.appendChild(portalContainer);
@@ -336,10 +340,15 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
             setIsMouseOverImage(false);
           }}
           onMouseEnter={() => setIsMouseOverImage(true)}
+          style={{
+            backgroundColor: shouldShowWhiteBackground ? '#FFFFFF' : '#18181B'
+          }}
         >
-          <div className="absolute inset-0 opacity-30">
-            <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+CiAgPHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMjIyMjIyIi8+CiAgPHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIGZpbGw9IiMyMjIyMjIiLz4KPC9zdmc+')] bg-center" />
-          </div>
+          {!shouldShowWhiteBackground && (
+            <div className="absolute inset-0 opacity-30">
+              <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+CiAgPHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMjIyMjIyIi8+CiAgPHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIGZpbGw9IiMyMjIyMjIiLz4KPC9zdmc+')] bg-center" />
+            </div>
+          )}
           
           <img
             ref={imageRef}

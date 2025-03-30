@@ -215,6 +215,7 @@ export function ImagePreview({
           imageUrl={file.status === 'completed' ? file.result! : file.preview}
           originalUrl={file.status === 'completed' ? file.preview : undefined}
           onClose={() => setShowModal(false)}
+          processingMode={file.processingMode}
         />
       )}
 

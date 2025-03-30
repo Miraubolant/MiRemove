@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ImageIcon, Download, Clock, Trash2, Maximize2, AlertTriangle } from 'lucide-react';
+import { ImageIcon, Download, Clock, Trash2, Maximize2, AlertTriangle, Wand2, Layers } from 'lucide-react';
 import { AuthModal } from './AuthModal';
 import { ResizeModal } from './ResizeModal';
 import { useAuthStore } from '../stores/authStore';
@@ -100,8 +100,30 @@ export function ModelSelector({
     }
   };
 
+  // Get icon and styles based on mode
+  const getModeIcon = () => {
+    switch (mode) {
+      case 'resize': return Maximize2;
+      case 'ai': return Wand2;
+      case 'both': return Layers;
+      default: return ImageIcon;
+    }
+  };
+
+  const getBadgeColor = () => {
+    switch (mode) {
+      case 'resize': return "bg-blue-500";
+      case 'ai': return "bg-purple-500";
+      case 'both': return "bg-emerald-500";
+      default: return "bg-slate-500";
+    }
+  };
+
+  const ModeIcon = getModeIcon();
+  const badgeColor = getBadgeColor();
+
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
       <div className="flex-1">
         <ProgressBar
           total={totalToProcess}
@@ -110,32 +132,29 @@ export function ModelSelector({
         />
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4">
         {pendingCount > 0 && (
-          <div className="bg-slate-800/50 px-4 py-2 rounded-xl flex items-center gap-2">
-            <Clock className="w-4 h-4 text-emerald-500" />
-            <span className="text-sm text-gray-300">
+          <div className="bg-slate-800/70 backdrop-blur-sm px-4 py-2 rounded-xl flex items-center gap-2 border border-slate-700/50">
+            <Clock className="w-4 h-4 text-amber-400" />
+            <span className="text-sm font-medium text-gray-300">
               {pendingCount} image{pendingCount > 1 ? 's' : ''} en attente
             </span>
           </div>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <div className="relative">
             <button
               type="button"
               onClick={handleResizeClick}
-              className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${
-                outputDimensions 
-                  ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600'
-                  : 'bg-slate-700 hover:bg-slate-600 text-white'
-              }`}
+              className="h-[48px] w-[48px] flex items-center justify-center rounded-xl shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600"
               title={outputDimensions ? "Modifier le traitement" : "Configurer le traitement"}
+              aria-label="Configurer le redimensionnement"
             >
               <Maximize2 className="w-5 h-5" />
             </button>
             {shouldShowDimensions && outputDimensions && (
-              <div className="absolute -top-3 -right-3 bg-emerald-500 text-white text-xs px-2 py-1 rounded-full shadow-lg">
+              <div className={`absolute -top-3 -right-3 ${badgeColor} text-white text-xs font-medium px-2 py-1 rounded-full shadow-lg flex items-center justify-center min-w-[32px]`}>
                 {outputDimensions.width}×{outputDimensions.height}
               </div>
             )}
@@ -145,12 +164,13 @@ export function ModelSelector({
             type="button"
             onClick={onDownloadAllJpg}
             disabled={!hasCompletedFiles}
-            className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${
+            className={`h-[48px] w-[48px] flex items-center justify-center rounded-xl shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 ${
               hasCompletedFiles 
                 ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600'
-                : 'bg-slate-700 opacity-50 cursor-not-allowed hover:scale-100'
+                : 'bg-slate-800 opacity-50 cursor-not-allowed hover:scale-100 border border-slate-700/50'
             }`}
             title="Télécharger en JPG"
+            aria-label="Télécharger toutes les images en JPG"
           >
             <Download className="w-5 h-5" />
           </button>
@@ -160,14 +180,15 @@ export function ModelSelector({
               type="button"
               onClick={handleDeleteClick}
               disabled={!hasCompletedFiles && !hasPendingFiles}
-              className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${
+              className={`h-[48px] w-[48px] flex items-center justify-center rounded-xl shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 ${
                 isConfirmingDelete
                   ? 'bg-red-600 hover:bg-red-700 text-white'
                   : hasCompletedFiles || hasPendingFiles
                     ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600'
-                    : 'bg-slate-700 opacity-50 cursor-not-allowed hover:scale-100'
+                    : 'bg-slate-800 opacity-50 cursor-not-allowed hover:scale-100 border border-slate-700/50'
               }`}
               title={isConfirmingDelete ? "Confirmer la suppression" : "Supprimer toutes les photos"}
+              aria-label="Supprimer toutes les photos"
             >
               {isConfirmingDelete ? (
                 <AlertTriangle className="w-5 h-5 animate-pulse" />
@@ -176,7 +197,7 @@ export function ModelSelector({
               )}
             </button>
             {isConfirmingDelete && (
-              <div className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg shadow-lg">
+              <div className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap bg-red-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-lg">
                 Cliquez à nouveau pour confirmer
                 <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-red-600 rotate-45"></div>
               </div>
@@ -187,15 +208,16 @@ export function ModelSelector({
             type="submit"
             onClick={handleSubmit}
             disabled={isProcessing || !hasPendingFiles}
-            className={`h-[46px] px-6 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 min-w-[200px] ${
+            className={`h-[48px] px-6 rounded-xl font-medium shadow-lg transition-all duration-300 flex items-center gap-3 min-w-[220px] ${
               !isProcessing && hasPendingFiles
-                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:scale-105 active:scale-95'
-                : 'bg-slate-800/50 text-gray-500 cursor-not-allowed'
+                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600 hover:scale-102 active:scale-98'
+                : 'bg-slate-800/90 text-gray-500 cursor-not-allowed border border-slate-700/50'
             }`}
+            aria-label={getButtonText()}
           >
-            <div className="flex items-center gap-2">
-              <ImageIcon className="w-5 h-5" />
-              <span>{getButtonText()}</span>
+            <div className="flex items-center gap-3">
+              <ModeIcon className="w-5 h-5" />
+              <span className="font-medium">{getButtonText()}</span>
             </div>
           </button>
         </div>

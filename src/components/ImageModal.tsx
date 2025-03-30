@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Download, Copy, ZoomIn, ZoomOut, RotateCcw, SplitSquareVertical, Layers, Check, Maximize2, PaintBucket } from 'lucide-react';
+import { X, Download, Copy, ZoomIn, ZoomOut, RotateCcw, SplitSquareVertical, Layers, Check, Maximize2 } from 'lucide-react';
 import { removeBackground } from '../services/api';
 
 interface ImageModalProps {
@@ -25,15 +25,11 @@ export function ImageModal({ imageUrl, originalUrl, onClose, processingMode }: I
   const [modalSize, setModalSize] = useState({ width: DEFAULT_MODAL_WIDTH, height: DEFAULT_MODAL_HEIGHT });
   const [isMouseOverImage, setIsMouseOverImage] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
-  const [hasWhiteBackground, setHasWhiteBackground] = useState(false);
   const [portalContainer] = useState(() => {
     const el = document.createElement('div');
     el.setAttribute('id', 'modal-root');
     return el;
   });
-
-  // Determine if we should show white background
-  const shouldShowWhiteBackground = !showOriginal && (hasWhiteBackground || (processingMode === 'ai' || processingMode === 'both'));
 
   useEffect(() => {
     document.body.appendChild(portalContainer);
@@ -208,7 +204,7 @@ export function ImageModal({ imageUrl, originalUrl, onClose, processingMode }: I
       const response = await fetch(showOriginal ? (originalUrl || imageUrl) : imageUrl);
       const blob = await response.blob();
 
-      // Create a canvas to convert to JPG with white background
+      // Create a canvas to convert to JPG
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
@@ -226,10 +222,6 @@ export function ImageModal({ imageUrl, originalUrl, onClose, processingMode }: I
       // Set canvas dimensions to match original image
       canvas.width = img.naturalWidth;
       canvas.height = img.naturalHeight;
-
-      // Add white background
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Draw the image at original size
       ctx.drawImage(img, 0, 0);
@@ -350,17 +342,6 @@ export function ImageModal({ imageUrl, originalUrl, onClose, processingMode }: I
               </div>
             )}
 
-            {/* Add white background toggle button */}
-            <div className="flex items-center gap-2 border-r border-gray-700/50 pr-4">
-              <button
-                onClick={() => setHasWhiteBackground(!hasWhiteBackground)}
-                className={`btn-icon ${hasWhiteBackground ? 'bg-emerald-500/10 text-emerald-500' : ''}`}
-                title={hasWhiteBackground ? "Retirer le fond blanc" : "Ajouter un fond blanc"}
-              >
-                <PaintBucket className="w-5 h-5" />
-              </button>
-            </div>
-
             <div className="flex items-center gap-4">
               <button
                 onClick={copyToClipboard}
@@ -393,15 +374,10 @@ export function ImageModal({ imageUrl, originalUrl, onClose, processingMode }: I
             setIsMouseOverImage(false);
           }}
           onMouseEnter={() => setIsMouseOverImage(true)}
-          style={{
-            backgroundColor: shouldShowWhiteBackground ? '#FFFFFF' : '#18181B'
-          }}
         >
-          {!shouldShowWhiteBackground && (
-            <div className="absolute inset-0 opacity-30">
-              <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+CiAgPHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMjIyMjIyIi8+CiAgPHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIGZpbGw9IiMyMjIyMjIiLz4KPC9zdmc+')] bg-center" />
-            </div>
-          )}
+          <div className="absolute inset-0 opacity-30">
+            <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+CiAgPHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMjIyMjIyIi8+CiAgPHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIGZpbGw9IiMyMjIyMjIiLz4KPC9zdmc+')] bg-center" />
+          </div>
           
           <img
             ref={imageRef}

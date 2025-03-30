@@ -35,7 +35,6 @@ function MainApp() {
     tool: 'imagemagick',
     mode: 'ai'
   });
-  const [hasWhiteBackground, setHasWhiteBackground] = useState(false);
   const [totalToProcess, setTotalToProcess] = useState(0);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -62,7 +61,6 @@ function MainApp() {
       id: crypto.randomUUID(),
       status: 'pending' as const,
       preview: URL.createObjectURL(file),
-      backgroundColor: hasWhiteBackground ? '#FFFFFF' : 'transparent',
       model: selectedModel,
       processingMode: outputDimensions?.mode || 'ai'
     }));
@@ -181,6 +179,10 @@ function MainApp() {
     for (const file of completedFiles) {
       if (!file.result) continue;
 
+      const response = await fetch(file.result);
+      const blob = await response.blob();
+
+      // Convert to JPG with white background
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) continue;
@@ -191,27 +193,28 @@ function MainApp() {
       await new Promise((resolve, reject) => {
         img.onload = resolve;
         img.onerror = reject;
-        img.src = file.result!;
+        img.src = URL.createObjectURL(blob);
       });
 
-      const width = outputDimensions?.width || img.width;
-      const height = outputDimensions?.height || img.height;
+      canvas.width = img.width;
+      canvas.height = img.height;
 
-      canvas.width = width;
-      canvas.height = height;
-
+      // Add white background
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, width, height);
+      ctx.drawImage(img, 0, 0);
 
-      const blob = await new Promise<Blob>((resolve) => {
+      const jpgBlob = await new Promise<Blob>((resolve) => {
         canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.9);
       });
 
       // Use original filename but change extension to .jpg
       const originalName = file.file.name;
       const fileName = originalName.substring(0, originalName.lastIndexOf('.')) + '.jpg';
-      zip.file(fileName, blob);
+      zip.file(fileName, jpgBlob);
+
+      // Cleanup
+      URL.revokeObjectURL(img.src);
     }
 
     const content = await zip.generateAsync({ type: 'blob' });
@@ -223,25 +226,6 @@ function MainApp() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  };
-
-  const toggleWhiteBackground = () => {
-    setHasWhiteBackground(!hasWhiteBackground);
-    setSelectedFiles(prev => prev.map(file => ({
-      ...file,
-      backgroundColor: !hasWhiteBackground ? '#FFFFFF' : 'transparent'
-    })));
-  };
-
-  const removeFile = (id: string) => {
-    const file = selectedFiles.find(f => f.id === id);
-    if (file) {
-      URL.revokeObjectURL(file.preview);
-      if (file.result) {
-        URL.revokeObjectURL(file.result);
-      }
-    }
-    setSelectedFiles(prev => prev.filter(f => f.id !== id));
   };
 
   const handleDeleteAll = () => {
@@ -264,10 +248,15 @@ function MainApp() {
     }
   };
 
-  const handleBackgroundColorChange = (id: string, color: string) => {
-    setSelectedFiles(prev =>
-      prev.map(f => f.id === id ? { ...f, backgroundColor: color } : f)
-    );
+  const removeFile = (id: string) => {
+    const file = selectedFiles.find(f => f.id === id);
+    if (file) {
+      URL.revokeObjectURL(file.preview);
+      if (file.result) {
+        URL.revokeObjectURL(file.result);
+      }
+    }
+    setSelectedFiles(prev => prev.filter(f => f.id !== id));
   };
 
   const handleApplyResize = (dimensions: { width: number; height: number; tool: string; mode: 'resize' | 'ai' | 'both' } | null) => {
@@ -315,7 +304,6 @@ function MainApp() {
               key={file.id}
               file={file}
               onRemove={removeFile}
-              onBackgroundColorChange={handleBackgroundColorChange}
               onProcess={processImage}
               outputDimensions={outputDimensions}
             />

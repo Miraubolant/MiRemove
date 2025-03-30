@@ -204,14 +204,44 @@ export function ImageModal({ imageUrl, originalUrl, onClose, processingMode }: I
   const downloadImage = async () => {
     const response = await fetch(showOriginal ? (originalUrl || imageUrl) : imageUrl);
     const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
+
+    // Convert to JPG with white background
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = URL.createObjectURL(blob);
+    });
+
+    canvas.width = img.width;
+    canvas.height = img.height;
+
+    // Add white background
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+
+    const jpgBlob = await new Promise<Blob>((resolve) => {
+      canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.9);
+    });
+
+    const url = URL.createObjectURL(jpgBlob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'image.png';
+    a.download = 'image.jpg';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+
+    // Cleanup
     URL.revokeObjectURL(url);
+    URL.revokeObjectURL(img.src);
   };
 
   const resetView = () => {

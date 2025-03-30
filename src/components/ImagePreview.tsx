@@ -78,6 +78,10 @@ export function ImagePreview({
     }
   };
 
+  // Determine if we should show white background
+  const shouldShowWhiteBackground = file.status === 'completed' && 
+    (file.processingMode === 'ai' || file.processingMode === 'both');
+
   return (
     <>
       <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl border border-gray-700 w-full">
@@ -154,7 +158,9 @@ export function ImagePreview({
           <div 
             className="w-full h-[300px] bg-slate-800/50 rounded-xl overflow-hidden shadow-md cursor-pointer relative group"
             onClick={() => setShowModal(true)}
-            style={{ backgroundColor: !showOriginal && file.backgroundColor === '#FFFFFF' ? '#FFFFFF' : undefined }}
+            style={{ 
+              backgroundColor: shouldShowWhiteBackground ? '#FFFFFF' : undefined 
+            }}
           >
             {file.status === 'completed' && (
               <>

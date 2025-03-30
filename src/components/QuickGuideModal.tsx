@@ -147,7 +147,7 @@ export function QuickGuideModal({ onClose }: QuickGuideModalProps) {
             {features.map((feature, index) => (
               <div 
                 key={index}
-                className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-xl p-6 border border-gray-700/30 hover:border-emerald-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10 group"
+                className="bg-slate-900 rounded-xl p-6 border border-gray-700/30 hover:border-emerald-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10 group"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className="flex items-center gap-4 mb-4">
@@ -182,7 +182,7 @@ export function QuickGuideModal({ onClose }: QuickGuideModalProps) {
               {tools.map((tool, index) => (
                 <div 
                   key={index}
-                  className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-xl p-5 border border-gray-700/30 hover:border-emerald-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10 group transform hover:-translate-y-1"
+                  className="bg-slate-900 rounded-xl p-5 border border-gray-700/30 hover:border-emerald-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10 group transform hover:-translate-y-1"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <div className="flex flex-col items-center text-center gap-4">
@@ -205,7 +205,7 @@ export function QuickGuideModal({ onClose }: QuickGuideModalProps) {
             {tips.map((tip, index) => (
               <div 
                 key={index}
-                className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-xl p-5 border border-gray-700/30 hover:border-emerald-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10 group"
+                className="bg-slate-900 rounded-xl p-5 border border-gray-700/30 hover:border-emerald-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10 group"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className="flex items-center gap-4">
@@ -228,12 +228,10 @@ export function QuickGuideModal({ onClose }: QuickGuideModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-300">
-      <div className="bg-gradient-to-br from-slate-900/95 to-slate-950/95 backdrop-blur-md rounded-2xl shadow-2xl shadow-emerald-500/5 border border-gray-800/30 w-full max-w-5xl animate-in zoom-in-95 duration-300">
-        {/* Header with Glassmorphism effect */}
-        <div className="relative overflow-hidden rounded-t-2xl bg-gradient-to-r from-emerald-600/10 to-blue-600/10 backdrop-blur-sm p-8 border-b border-gray-800/30">
+      <div className="bg-slate-900 rounded-2xl shadow-2xl shadow-emerald-500/5 border border-gray-800/30 w-full max-w-5xl animate-in zoom-in-95 duration-300">
+        {/* Header avec fond unifié */}
+        <div className="relative overflow-hidden rounded-t-2xl bg-slate-900 p-8 border-b border-gray-800/30">
           <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:20px_20px]"></div>
-          <div className="absolute h-32 w-32 -top-10 -right-10 bg-emerald-500/20 rounded-full blur-3xl"></div>
-          <div className="absolute h-20 w-20 top-10 right-10 bg-blue-500/20 rounded-full blur-2xl"></div>
           
           <div className="flex items-center justify-between relative z-10">
             <div className="flex items-center gap-4">
@@ -258,9 +256,9 @@ export function QuickGuideModal({ onClose }: QuickGuideModalProps) {
           </div>
         </div>
 
-        {/* Tabs Navigation */}
-        <div className="flex justify-center p-4 bg-slate-800/30 border-b border-gray-800/30">
-          <div className="flex space-x-2 bg-slate-900/60 p-1 rounded-lg border border-gray-800/30">
+        {/* Tabs Navigation avec fond unifié */}
+        <div className="flex justify-center p-4 bg-slate-900 border-b border-gray-800/30">
+          <div className="flex space-x-2 bg-slate-800 p-1 rounded-lg border border-gray-800/30">
             {sections.map((section, index) => (
               <button
                 key={section}
@@ -277,11 +275,8 @@ export function QuickGuideModal({ onClose }: QuickGuideModalProps) {
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="p-8 overflow-hidden relative">
-          <div className="absolute h-64 w-64 -bottom-32 -left-32 bg-blue-500/10 rounded-full blur-3xl"></div>
-          <div className="absolute h-64 w-64 -top-32 -right-32 bg-emerald-500/10 rounded-full blur-3xl"></div>
-          
+        {/* Main Content avec fond unifié */}
+        <div className="p-8 overflow-hidden relative bg-slate-900">
           <div className="overflow-hidden">
             {renderSection()}
           </div>
@@ -320,8 +315,8 @@ export function QuickGuideModal({ onClose }: QuickGuideModalProps) {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="bg-gradient-to-r from-gray-900/70 to-gray-800/70 p-6 rounded-b-2xl border-t border-gray-800/30 text-center">
+        {/* Footer avec fond unifié */}
+        <div className="bg-slate-900 p-6 rounded-b-2xl border-t border-gray-800/30 text-center">
           <button
             onClick={onClose}
             className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white px-8 py-3 rounded-xl transition-all duration-300 font-medium shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transform hover:-translate-y-0.5"

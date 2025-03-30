@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Loader2, X, Info, ZoomIn, SplitSquareVertical, Play, Check, Maximize2, Wand2 } from 'lucide-react';
+import { Loader2, X, Info, ZoomIn, Play, Check, Maximize2, Wand2 } from 'lucide-react';
 import { ImageFile } from '../types';
 import { ImageModal } from './ImageModal';
 import { AuthModal } from './AuthModal';
@@ -8,7 +8,6 @@ import { useAuthStore } from '../stores/authStore';
 interface ImagePreviewProps {
   file: ImageFile;
   onRemove: (id: string) => void;
-  onBackgroundColorChange?: (id: string, color: string) => void;
   onProcess: (file: ImageFile) => Promise<void>;
   outputDimensions?: { width: number; height: number; tool?: string; mode?: 'resize' | 'ai' | 'both' } | null;
 }
@@ -16,7 +15,6 @@ interface ImagePreviewProps {
 export function ImagePreview({ 
   file, 
   onRemove, 
-  onBackgroundColorChange, 
   onProcess,
   outputDimensions
 }: ImagePreviewProps) {
@@ -34,10 +32,6 @@ export function ImagePreview({
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
   };
 
-  const dimensionsText = file.dimensions?.width && file.dimensions?.height
-    ? `${file.dimensions.width}×${file.dimensions.height}`
-    : 'Dimensions inconnues';
-
   const handleProcess = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user) {
@@ -47,40 +41,48 @@ export function ImagePreview({
     await onProcess(file);
   };
 
-  // Get processing mode badge text
-  const getProcessingBadge = () => {
-    if (!file.processingMode || file.status !== 'completed') return null;
-    
-    switch (file.processingMode) {
-      case 'resize':
-        return (
-          <div className="text-xs bg-blue-500/10 text-blue-400 py-1.5 px-2.5 rounded-lg flex items-center gap-2">
-            <Maximize2 className="w-3 h-3" />
-            <span>Redimensionné {outputDimensions?.width}×{outputDimensions?.height}</span>
-          </div>
-        );
-      case 'ai':
-        return (
-          <div className="text-xs bg-purple-500/10 text-purple-400 py-1.5 px-2.5 rounded-lg flex items-center gap-2">
-            <Wand2 className="w-3 h-3" />
-            <span>IA</span>
-          </div>
-        );
-      case 'both':
-        return (
-          <div className="text-xs bg-emerald-500/10 text-emerald-500 py-1.5 px-2.5 rounded-lg flex items-center gap-2">
-            <Wand2 className="w-3 h-3" />
-            <span>IA + {outputDimensions?.width}×{outputDimensions?.height}</span>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
-
   // Determine if we should show white background
   const shouldShowWhiteBackground = file.status === 'completed' && 
     (file.processingMode === 'ai' || file.processingMode === 'both');
+
+  // Get dimensions badge text and icon
+  const getDimensionsBadge = () => {
+    if (!file.dimensions) return null;
+
+    const { width, height, original } = file.dimensions;
+    const isResized = width !== original.width || height !== original.height;
+
+    if (file.status === 'completed') {
+      if (file.processingMode === 'resize') {
+        return {
+          icon: <Maximize2 className="w-3 h-3 text-blue-400" />,
+          text: `${width}×${height}`,
+          className: "bg-blue-500/10 text-blue-400"
+        };
+      } else if (file.processingMode === 'ai') {
+        return {
+          icon: <Wand2 className="w-3 h-3 text-purple-400" />,
+          text: `${width}×${height}`,
+          className: "bg-purple-500/10 text-purple-400"
+        };
+      } else if (file.processingMode === 'both') {
+        return {
+          icon: isResized ? <Maximize2 className="w-3 h-3 text-emerald-400" /> : <Wand2 className="w-3 h-3 text-emerald-400" />,
+          text: `${width}×${height}`,
+          className: "bg-emerald-500/10 text-emerald-400"
+        };
+      }
+    }
+
+    // Original dimensions
+    return {
+      icon: <Maximize2 className="w-3 h-3 text-gray-400" />,
+      text: `${original.width}×${original.height}`,
+      className: "bg-slate-700/50 text-gray-400"
+    };
+  };
+
+  const dimensionsBadge = getDimensionsBadge();
 
   return (
     <>
@@ -89,27 +91,17 @@ export function ImagePreview({
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                {/* Original dimensions badge - always shown */}
-                <div className="text-xs bg-slate-800/80 text-gray-300 py-1.5 px-2.5 rounded-lg flex items-center gap-2">
-                  <Maximize2 className="w-3 h-3 text-emerald-500" />
-                  <span>{dimensionsText}</span>
-                </div>
-                {/* Processing mode badge */}
-                {getProcessingBadge()}
+                {/* Dimensions badge */}
+                {dimensionsBadge && (
+                  <div className={`text-xs py-1.5 px-2.5 rounded-lg flex items-center gap-2 ${dimensionsBadge.className}`}>
+                    {dimensionsBadge.icon}
+                    <span>{dimensionsBadge.text}</span>
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
-              {file.status === 'completed' && (
-                <button
-                  type="button"
-                  onClick={() => setShowOriginal(!showOriginal)}
-                  className={`btn-icon ${showOriginal ? 'bg-emerald-500/10' : ''}`}
-                  title={showOriginal ? "Voir le résultat" : "Voir l'original"}
-                >
-                  <SplitSquareVertical className="w-4 h-4" />
-                </button>
-              )}
               <button
                 type="button"
                 onClick={() => setShowInfo(!showInfo)}

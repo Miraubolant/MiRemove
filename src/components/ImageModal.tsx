@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Download, Copy, ZoomIn, ZoomOut, RotateCcw, SplitSquareVertical, Layers, Check } from 'lucide-react';
+import { X, Download, Copy, ZoomIn, ZoomOut, RotateCcw, SplitSquareVertical, Layers, Check, Maximize2 } from 'lucide-react';
 import { removeBackground } from '../services/api';
 
 interface ImageModalProps {
@@ -8,12 +8,6 @@ interface ImageModalProps {
   originalUrl?: string;
   onClose: () => void;
 }
-
-const models = [
-  { id: 'bria', name: 'Standard', description: 'Modèle général polyvalent' },
-  { id: 'mannequin', name: 'Mannequin', description: 'Optimisé pour les photos de mannequins' },
-  { id: 'packshot', name: 'Packshot', description: 'Optimisé pour les photos de vêtements sans mannequin' }
-];
 
 const DEFAULT_MODAL_WIDTH = 1600;
 const DEFAULT_MODAL_HEIGHT = 900;
@@ -30,10 +24,6 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
   const [modalSize, setModalSize] = useState({ width: DEFAULT_MODAL_WIDTH, height: DEFAULT_MODAL_HEIGHT });
   const [isMouseOverImage, setIsMouseOverImage] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('bria');
-  const [showModelSelector, setShowModelSelector] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [processedImageUrl, setProcessedImageUrl] = useState<string | null>(null);
   const [portalContainer] = useState(() => {
     const el = document.createElement('div');
     el.setAttribute('id', 'modal-root');
@@ -93,14 +83,14 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
   }, [imageUrl]);
 
   useEffect(() => {
-    const currentImage = showOriginal ? imageUrl : (processedImageUrl || imageUrl);
+    const currentImage = showOriginal ? (originalUrl || imageUrl) : imageUrl;
     const img = new Image();
     img.onload = () => {
       setImageSize({ width: img.width, height: img.height });
       resetView();
     };
     img.src = currentImage;
-  }, [showOriginal, imageUrl, processedImageUrl]);
+  }, [showOriginal, imageUrl, originalUrl]);
 
   const centerImage = () => {
     if (!containerRef.current || !imageRef.current) return;
@@ -197,7 +187,7 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
 
   const copyToClipboard = async () => {
     try {
-      const response = await fetch(showOriginal ? imageUrl : (processedImageUrl || imageUrl));
+      const response = await fetch(showOriginal ? (originalUrl || imageUrl) : imageUrl);
       const blob = await response.blob();
       await navigator.clipboard.write([
         new ClipboardItem({ [blob.type]: blob })
@@ -208,31 +198,12 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
   };
 
   const downloadImage = async () => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx || !imageRef.current) return;
-
-    const img = imageRef.current;
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-
-    // Toujours ajouter un fond blanc
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(img, 0, 0);
-
-    const blob = await new Promise<Blob>((resolve) => {
-      canvas.toBlob(
-        (b) => resolve(b!),
-        'image/jpeg',
-        0.9
-      );
-    });
-
+    const response = await fetch(showOriginal ? (originalUrl || imageUrl) : imageUrl);
+    const blob = await response.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'image.jpg';
+    a.download = 'image.png';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -251,33 +222,14 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
     centerImage();
   };
 
-  const handleModelSelect = async (modelId: string) => {
-    setSelectedModel(modelId);
-    setShowModelSelector(false);
-    setIsProcessing(true);
-
-    try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const file = new File([blob], 'image.png', { type: blob.type });
-
-      const result = await removeBackground(file, modelId);
-      setProcessedImageUrl(result);
-    } catch (error) {
-      console.error('Error processing image:', error);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   return createPortal(
     <div
       ref={modalRef}
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-8"
+      className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-300"
       onClick={handleBackgroundClick}
     >
       <div 
-        className="bg-slate-900/95 backdrop-blur-sm rounded-lg shadow-2xl border border-gray-800/50 flex flex-col"
+        className="bg-slate-900/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-800/50 flex flex-col"
         style={{
           width: modalSize.width,
           height: modalSize.height,
@@ -286,9 +238,9 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
         }}
       >
         {/* Header */}
-        <div className="bg-slate-800/80 backdrop-blur-sm px-4 py-3 flex items-center justify-between rounded-t-lg border-b border-gray-700/50">
+        <div className="bg-slate-800/80 backdrop-blur-sm px-4 py-3 flex items-center justify-between rounded-t-2xl border-b border-gray-700/50">
           <div className="flex items-center gap-2">
-            <div className="bg-emerald-500/10 p-2 rounded">
+            <div className="bg-emerald-500/10 p-2 rounded-lg">
               <img src={imageUrl} className="w-5 h-5 object-cover rounded" alt="thumbnail" />
             </div>
             <span className="text-sm text-gray-300">
@@ -297,14 +249,14 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded"
+            className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Toolbar */}
-        <div className="bg-slate-800/60 backdrop-blur-sm border-b border-gray-700/50 px-4 py-3 sticky top-0 z-10">
+        <div className="bg-slate-800/60 backdrop-blur-sm border-b border-gray-700/50 px-4 py-3">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 border-r border-gray-700/50 pr-4">
               <button
@@ -316,7 +268,7 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
               </button>
               <button
                 onClick={resetView}
-                className="px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-700/50 rounded"
+                className="px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-700/50 rounded-lg transition-colors"
                 title="Réinitialiser le zoom"
               >
                 {Math.round(scale * 100)}%
@@ -340,45 +292,17 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
               </button>
             </div>
 
-            <div className="flex items-center gap-2 border-r border-gray-700/50 pr-4">
-              <button
-                onClick={() => setShowOriginal(!showOriginal)}
-                className={`btn-icon ${showOriginal ? 'bg-emerald-500/10 text-emerald-500' : ''}`}
-                title={showOriginal ? "Voir le résultat" : "Voir l'original"}
-              >
-                <SplitSquareVertical className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="relative flex items-center gap-2 border-r border-gray-700/50 pr-4">
-              <button
-                onClick={() => setShowModelSelector(!showModelSelector)}
-                className={`btn-icon ${showModelSelector ? 'bg-emerald-500/10 text-emerald-500' : ''}`}
-                title="Changer de modèle"
-              >
-                <Layers className="w-5 h-5" />
-              </button>
-
-              {showModelSelector && (
-                <div className="absolute top-full left-0 mt-2 w-64 bg-slate-800 rounded-lg shadow-xl border border-gray-700/50 p-2 space-y-1">
-                  {models.map((model) => (
-                    <button
-                      key={model.id}
-                      onClick={() => handleModelSelect(model.id)}
-                      className={`w-full px-3 py-2 text-left rounded-lg hover:bg-slate-700/50 flex items-center gap-2 ${
-                        selectedModel === model.id ? 'bg-emerald-500/10 text-emerald-500' : 'text-gray-300'
-                      }`}
-                    >
-                      {selectedModel === model.id && <Check className="w-4 h-4 flex-shrink-0" />}
-                      <div className="flex-1">
-                        <div className="font-medium">{model.name}</div>
-                        <div className="text-xs text-gray-400">{model.description}</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            {originalUrl && (
+              <div className="flex items-center gap-2 border-r border-gray-700/50 pr-4">
+                <button
+                  onClick={() => setShowOriginal(!showOriginal)}
+                  className={`btn-icon ${showOriginal ? 'bg-emerald-500/10 text-emerald-500' : ''}`}
+                  title={showOriginal ? "Voir le résultat" : "Voir l'original"}
+                >
+                  <SplitSquareVertical className="w-5 h-5" />
+                </button>
+              </div>
+            )}
 
             <div className="flex items-center gap-4">
               <button
@@ -391,7 +315,7 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
               <button
                 onClick={downloadImage}
                 className="btn-icon"
-                title="Télécharger l'image (JPG avec fond blanc)"
+                title="Télécharger l'image"
               >
                 <Download className="w-5 h-5" />
               </button>
@@ -402,7 +326,7 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
         {/* Image Container */}
         <div
           ref={containerRef}
-          className="relative bg-white overflow-auto flex-1"
+          className="relative bg-[#18181B] overflow-auto flex-1 rounded-b-2xl"
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -413,29 +337,22 @@ export function ImageModal({ imageUrl, originalUrl, onClose }: ImageModalProps) 
           }}
           onMouseEnter={() => setIsMouseOverImage(true)}
         >
-          {isProcessing ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-              <div className="text-white">Traitement en cours...</div>
-            </div>
-          ) : (
-            <img
-              ref={imageRef}
-              src={showOriginal ? imageUrl : (processedImageUrl || imageUrl)}
-              alt="Preview"
-              className={`max-w-none select-none absolute ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-              style={{
-                transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-                transition: isDragging ? 'none' : 'transform 0.2s ease-out',
-                transformOrigin: '0 0'
-              }}
-              draggable={false}
-            />
-          )}
-        </div>
-
-        {/* Instructions */}
-        <div className="bg-slate-800/80 backdrop-blur-sm px-4 py-2 text-xs text-gray-400 border-t border-gray-700/50 rounded-b-lg">
-          <p>Échap pour fermer</p>
+          <div className="absolute inset-0 opacity-30">
+            <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+CiAgPHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMjIyMjIyIi8+CiAgPHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIGZpbGw9IiMyMjIyMjIiLz4KPC9zdmc+')] bg-center" />
+          </div>
+          
+          <img
+            ref={imageRef}
+            src={showOriginal ? (originalUrl || imageUrl) : imageUrl}
+            alt="Preview"
+            className={`max-w-none select-none absolute ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+            style={{
+              transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+              transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+              transformOrigin: '0 0'
+            }}
+            draggable={false}
+          />
         </div>
       </div>
     </div>,

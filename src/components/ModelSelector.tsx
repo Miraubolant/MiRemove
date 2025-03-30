@@ -87,6 +87,9 @@ export function ModelSelector({
 
   // Only show dimensions badge if mode is 'resize' or 'both'
   const shouldShowDimensions = outputDimensions?.mode && ['resize', 'both'].includes(outputDimensions.mode);
+  
+  // Check if AI is part of the processing mode
+  const hasAiProcessing = outputDimensions?.mode && ['ai', 'both'].includes(outputDimensions.mode);
 
   const mode = outputDimensions?.mode || 'both';
 
@@ -153,9 +156,18 @@ export function ModelSelector({
             >
               <Maximize2 className="w-5 h-5" />
             </button>
+            
+            {/* Badge for dimensions */}
             {shouldShowDimensions && outputDimensions && (
               <div className={`absolute -top-3 -right-3 ${badgeColor} text-white text-xs font-medium px-2 py-1 rounded-full shadow-lg flex items-center justify-center min-w-[32px]`}>
                 {outputDimensions.width}×{outputDimensions.height}
+              </div>
+            )}
+            
+            {/* Badge for AI */}
+            {hasAiProcessing && (
+              <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-purple-500 text-white text-xs font-medium px-2 py-0.5 rounded-full shadow-lg whitespace-nowrap">
+                IA
               </div>
             )}
           </div>

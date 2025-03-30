@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Download, Copy, ZoomIn, ZoomOut, RotateCcw, SplitSquareVertical, Layers, Check, Maximize2 } from 'lucide-react';
+import { X, Download, ZoomIn, ZoomOut, SplitSquareVertical, PaintBucket } from 'lucide-react';
 import { removeBackground } from '../services/api';
 
 interface ImageModalProps {
@@ -25,11 +25,15 @@ export function ImageModal({ imageUrl, originalUrl, onClose, processingMode }: I
   const [modalSize, setModalSize] = useState({ width: DEFAULT_MODAL_WIDTH, height: DEFAULT_MODAL_HEIGHT });
   const [isMouseOverImage, setIsMouseOverImage] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
+  const [hasWhiteBackground, setHasWhiteBackground] = useState(false);
   const [portalContainer] = useState(() => {
     const el = document.createElement('div');
     el.setAttribute('id', 'modal-root');
     return el;
   });
+
+  // Determine if we should show white background
+  const shouldShowWhiteBackground = !showOriginal && hasWhiteBackground;
 
   useEffect(() => {
     document.body.appendChild(portalContainer);
@@ -186,18 +190,6 @@ export function ImageModal({ imageUrl, originalUrl, onClose, processingMode }: I
     }
   };
 
-  const copyToClipboard = async () => {
-    try {
-      const response = await fetch(showOriginal ? (originalUrl || imageUrl) : imageUrl);
-      const blob = await response.blob();
-      await navigator.clipboard.write([
-        new ClipboardItem({ [blob.type]: blob })
-      ]);
-    } catch (err) {
-      console.error('Erreur lors de la copie:', err);
-    }
-  };
-
   const downloadImage = async () => {
     try {
       // Get the image data
@@ -222,6 +214,12 @@ export function ImageModal({ imageUrl, originalUrl, onClose, processingMode }: I
       // Set canvas dimensions to match original image
       canvas.width = img.naturalWidth;
       canvas.height = img.naturalHeight;
+
+      // Add white background if needed
+      if (hasWhiteBackground) {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
 
       // Draw the image at original size
       ctx.drawImage(img, 0, 0);
@@ -267,7 +265,7 @@ export function ImageModal({ imageUrl, originalUrl, onClose, processingMode }: I
       onClick={handleBackgroundClick}
     >
       <div 
-        className="bg-slate-900/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-800/50 flex flex-col"
+        className="bg-slate-900/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-800/50 flex flex-col overflow-hidden"
         style={{
           width: modalSize.width,
           height: modalSize.height,
@@ -276,95 +274,104 @@ export function ImageModal({ imageUrl, originalUrl, onClose, processingMode }: I
         }}
       >
         {/* Header */}
-        <div className="bg-slate-800/80 backdrop-blur-sm px-4 py-3 flex items-center justify-between rounded-t-2xl border-b border-gray-700/50">
-          <div className="flex items-center gap-2">
-            <div className="bg-emerald-500/10 p-2 rounded-lg">
-              <img src={imageUrl} className="w-5 h-5 object-cover rounded" alt="thumbnail" />
+        <div className="bg-slate-800/80 backdrop-blur-sm px-6 py-4 flex items-center justify-between rounded-t-2xl border-b border-gray-700/50">
+          <div className="flex items-center gap-3">
+            <div className="bg-emerald-500/10 p-2.5 rounded-lg">
+              <img src={imageUrl} className="w-6 h-6 object-cover rounded" alt="thumbnail" />
             </div>
-            <span className="text-sm text-gray-300">
+            <span className="text-sm font-medium text-gray-200">
               {imageSize.width} × {imageSize.height}px
             </span>
           </div>
           <button
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
+            aria-label="Fermer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Toolbar */}
-        <div className="bg-slate-800/60 backdrop-blur-sm border-b border-gray-700/50 px-4 py-3">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 border-r border-gray-700/50 pr-4">
+        <div className="bg-slate-800/60 backdrop-blur-sm border-b border-gray-700/50 px-6 py-3">
+          <div className="flex items-center gap-6">
+            {/* Zoom Controls */}
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => setScale(s => Math.max(0.1, s - 0.1))}
-                className="btn-icon"
+                className="p-2 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
                 title="Zoom arrière"
               >
                 <ZoomOut className="w-5 h-5" />
               </button>
-              <button
-                onClick={resetView}
-                className="px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-700/50 rounded-lg transition-colors"
-                title="Réinitialiser le zoom"
-              >
+              <div className="px-3 py-1.5 text-sm text-gray-200 bg-gray-700/30 rounded-lg">
                 {Math.round(scale * 100)}%
-              </button>
+              </div>
               <button
                 onClick={() => setScale(s => Math.min(5, s + 0.1))}
-                className="btn-icon"
+                className="p-2 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
                 title="Zoom avant"
               >
                 <ZoomIn className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="flex items-center gap-2 border-r border-gray-700/50 pr-4">
-              <button
-                onClick={resetView}
-                className="btn-icon"
-                title="Réinitialiser la vue"
-              >
-                <RotateCcw className="w-5 h-5" />
-              </button>
-            </div>
+            {/* Divider */}
+            <div className="h-8 w-px bg-gray-700/50"></div>
 
+            {/* Toggle White Background */}
+            <button
+              onClick={() => setHasWhiteBackground(!hasWhiteBackground)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                hasWhiteBackground 
+                  ? 'bg-emerald-500/20 text-emerald-400' 
+                  : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
+              }`}
+              title={hasWhiteBackground ? "Retirer le fond blanc" : "Ajouter un fond blanc"}
+            >
+              <PaintBucket className="w-5 h-5" />
+              <span className="text-sm font-medium">Fond blanc</span>
+            </button>
+
+            {/* Compare Original (if available) */}
             {originalUrl && (
-              <div className="flex items-center gap-2 border-r border-gray-700/50 pr-4">
+              <>
+                <div className="h-8 w-px bg-gray-700/50"></div>
+                
                 <button
                   onClick={() => setShowOriginal(!showOriginal)}
-                  className={`btn-icon ${showOriginal ? 'bg-emerald-500/10 text-emerald-500' : ''}`}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                    showOriginal 
+                      ? 'bg-emerald-500/20 text-emerald-400' 
+                      : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
+                  }`}
                   title={showOriginal ? "Voir le résultat" : "Voir l'original"}
                 >
                   <SplitSquareVertical className="w-5 h-5" />
+                  <span className="text-sm font-medium">{showOriginal ? "Original" : "Résultat"}</span>
                 </button>
-              </div>
+              </>
             )}
 
-            <div className="flex items-center gap-4">
-              <button
-                onClick={copyToClipboard}
-                className="btn-icon"
-                title="Copier l'image"
-              >
-                <Copy className="w-5 h-5" />
-              </button>
-              <button
-                onClick={downloadImage}
-                className="btn-icon"
-                title="Télécharger l'image en JPG"
-              >
-                <Download className="w-5 h-5" />
-              </button>
-            </div>
+            {/* Spacer */}
+            <div className="flex-grow"></div>
+
+            {/* Download */}
+            <button
+              onClick={downloadImage}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors"
+              title="Télécharger l'image en JPG"
+            >
+              <Download className="w-5 h-5" />
+              <span className="text-sm font-medium">Télécharger</span>
+            </button>
           </div>
         </div>
 
         {/* Image Container */}
         <div
           ref={containerRef}
-          className="relative bg-[#18181B] overflow-auto flex-1 rounded-b-2xl"
+          className="relative overflow-auto flex-1 rounded-b-2xl"
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -374,10 +381,15 @@ export function ImageModal({ imageUrl, originalUrl, onClose, processingMode }: I
             setIsMouseOverImage(false);
           }}
           onMouseEnter={() => setIsMouseOverImage(true)}
+          style={{
+            backgroundColor: shouldShowWhiteBackground ? '#FFFFFF' : '#18181B'
+          }}
         >
-          <div className="absolute inset-0 opacity-30">
-            <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+CiAgPHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMjIyMjIyIi8+CiAgPHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIGZpbGw9IiMyMjIyMjIiLz4KPC9zdmc+')] bg-center" />
-          </div>
+          {!shouldShowWhiteBackground && (
+            <div className="absolute inset-0 opacity-30">
+              <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+CiAgPHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMjIyMjIyIi8+CiAgPHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIGZpbGw9IiMyMjIyMjIiLz4KPC9zdmc+')] bg-center" />
+            </div>
+          )}
           
           <img
             ref={imageRef}

@@ -41,7 +41,7 @@ function MainApp() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [isImageLimit, setIsImageLimit] = useState(false);
-  const { incrementCount, canProcess, remainingProcesses } = useUsageStore();
+  const { incrementCount, canProcess, remainingProcesses, resetCount } = useUsageStore();
   const { user } = useAuthStore();
   const { settings } = useAdminSettingsStore();
 
@@ -254,6 +254,14 @@ function MainApp() {
     });
     // Clear all files
     setSelectedFiles([]);
+    // Reset progress
+    setTotalProcessed(0);
+    setTotalToProcess(0);
+    setProcessingBatch(false);
+    // Reset usage store if not authenticated
+    if (!user) {
+      resetCount();
+    }
   };
 
   const handleBackgroundColorChange = (id: string, color: string) => {
@@ -291,9 +299,7 @@ function MainApp() {
             hasPendingFiles={hasPendingFiles}
             hasCompletedFiles={hasCompletedFiles}
             onDownloadAllJpg={downloadAllAsJpg}
-            onApplyWhiteBackground={toggleWhiteBackground}
             onDeleteAll={handleDeleteAll}
-            hasWhiteBackground={hasWhiteBackground}
             isProcessing={processingBatch}
             totalToProcess={totalToProcess}
             completed={totalProcessed}

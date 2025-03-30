@@ -46,7 +46,9 @@ export const useUsageStore = create<UsageState>()(
       },
 
       resetCount: () => {
-        set({ processCount: 0 });
+        if (!get().isAuthenticated) {
+          set({ processCount: 0 });
+        }
       },
 
       checkGroupLimit: async () => {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ImageIcon, Download, PaintBucket, Clock, Trash2, Maximize2 } from 'lucide-react';
+import { ImageIcon, Download, Clock, Trash2, Maximize2, AlertTriangle } from 'lucide-react';
 import { AuthModal } from './AuthModal';
 import { ResizeModal } from './ResizeModal';
 import { useAuthStore } from '../stores/authStore';
@@ -27,9 +27,7 @@ export function ModelSelector({
   hasPendingFiles,
   hasCompletedFiles = true,
   onDownloadAllJpg,
-  onApplyWhiteBackground,
   onDeleteAll,
-  hasWhiteBackground,
   isProcessing,
   totalToProcess = 0,
   completed = 0,
@@ -40,6 +38,8 @@ export function ModelSelector({
   const { user } = useAuthStore();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showResizeModal, setShowResizeModal] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [deleteButtonTimeout, setDeleteButtonTimeout] = useState<number | null>(null);
   const { settings } = useAdminSettingsStore();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -54,6 +54,36 @@ export function ModelSelector({
   const handleResizeClick = () => {
     setShowResizeModal(true);
   };
+
+  const handleDeleteClick = () => {
+    if (!isConfirmingDelete) {
+      setIsConfirmingDelete(true);
+      const timeout = window.setTimeout(() => {
+        setIsConfirmingDelete(false);
+      }, 3000) as unknown as number;
+      setDeleteButtonTimeout(timeout);
+      return;
+    }
+
+    // Clear any existing timeout
+    if (deleteButtonTimeout) {
+      window.clearTimeout(deleteButtonTimeout);
+      setDeleteButtonTimeout(null);
+    }
+
+    // Reset state and execute delete
+    setIsConfirmingDelete(false);
+    onDeleteAll?.();
+  };
+
+  // Cleanup timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (deleteButtonTimeout) {
+        window.clearTimeout(deleteButtonTimeout);
+      }
+    };
+  }, [deleteButtonTimeout]);
 
   // Only show dimensions badge if mode is 'resize' or 'both'
   const shouldShowDimensions = outputDimensions?.mode && ['resize', 'both'].includes(outputDimensions.mode);
@@ -113,20 +143,6 @@ export function ModelSelector({
 
           <button
             type="button"
-            onClick={onApplyWhiteBackground}
-            disabled={!hasCompletedFiles}
-            className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${
-              hasWhiteBackground
-                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white'
-                : 'bg-slate-700 hover:bg-slate-600 text-white'
-            } ${!hasCompletedFiles ? 'opacity-50 cursor-not-allowed hover:scale-100' : ''}`}
-            title={hasWhiteBackground ? "Retirer le fond blanc" : "Appliquer un fond blanc à toutes les images"}
-          >
-            <PaintBucket className="w-5 h-5" />
-          </button>
-
-          <button
-            type="button"
             onClick={onDownloadAllJpg}
             disabled={!hasCompletedFiles}
             className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${
@@ -139,19 +155,33 @@ export function ModelSelector({
             <Download className="w-5 h-5" />
           </button>
 
-          <button
-            type="button"
-            onClick={onDeleteAll}
-            disabled={!hasCompletedFiles && !hasPendingFiles}
-            className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${
-              hasCompletedFiles || hasPendingFiles
-                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600'
-                : 'bg-slate-700 opacity-50 cursor-not-allowed hover:scale-100'
-            }`}
-            title="Supprimer toutes les photos"
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={handleDeleteClick}
+              disabled={!hasCompletedFiles && !hasPendingFiles}
+              className={`h-[46px] w-[46px] flex items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${
+                isConfirmingDelete
+                  ? 'bg-red-600 hover:bg-red-700 text-white'
+                  : hasCompletedFiles || hasPendingFiles
+                    ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600'
+                    : 'bg-slate-700 opacity-50 cursor-not-allowed hover:scale-100'
+              }`}
+              title={isConfirmingDelete ? "Confirmer la suppression" : "Supprimer toutes les photos"}
+            >
+              {isConfirmingDelete ? (
+                <AlertTriangle className="w-5 h-5 animate-pulse" />
+              ) : (
+                <Trash2 className="w-5 h-5" />
+              )}
+            </button>
+            {isConfirmingDelete && (
+              <div className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg shadow-lg">
+                Cliquez à nouveau pour confirmer
+                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-red-600 rotate-45"></div>
+              </div>
+            )}
+          </div>
 
           <button
             type="submit"

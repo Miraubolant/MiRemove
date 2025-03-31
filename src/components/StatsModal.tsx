@@ -14,7 +14,12 @@ import {
   TrendingUp,
   Info,
   ArrowUpRight,
-  BarChart3
+  BarChart3,
+  Maximize2,
+  Wand2,
+  Scissors,
+  Sparkles,
+  Layers
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../stores/authStore';
@@ -39,6 +44,14 @@ interface UserStats {
   is_admin: boolean;
   image_limit: number;
   group?: GroupData;
+  resize_count: number;
+  ai_count: number;
+  crop_head_count: number;
+  all_processing_count: number;
+  resize_processing_time: number;
+  ai_processing_time: number;
+  crop_head_processing_time: number;
+  all_processing_time: number;
 }
 
 interface Stats {
@@ -229,112 +242,44 @@ export function StatsModal({ onClose, stats }: StatsModalProps) {
     setTimeout(() => onClose(), 300);
   };
 
-  const GroupSection = ({ group }: { group: GroupData }) => (
-    <div className="bg-gradient-to-b from-slate-800 to-slate-800/80 rounded-xl shadow-xl overflow-hidden animate-in fade-in border border-slate-700/10">
-      <div className="bg-slate-700/20 backdrop-blur px-6 py-4 border-b border-slate-700/30 flex items-center justify-between">
-        <SectionHeader 
-          icon={Users} 
-          title={`Groupe ${group.name}`} 
-          subtitle="Statistiques collectives" 
-        />
-      </div>
-      
-      <div className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="bg-slate-800/80 backdrop-blur rounded-xl p-5 shadow-md border border-slate-700/20">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-3">
-                <div className="bg-slate-700/70 p-2 rounded-lg">
-                  <Image className="w-4 h-4 text-emerald-400" />
-                </div>
-                <div className="text-sm text-gray-300 font-medium">Images groupe</div>
-              </div>
-              <div className="text-xs text-gray-400 bg-slate-700/50 px-3 py-1 rounded-full border border-slate-600/30">
-                {Math.min(100, Math.round((group.total_processed || 0) / group.image_limit * 100))}% utilisé
-              </div>
-            </div>
-            <div className="flex justify-between items-end mb-4">
-              <div className="text-2xl font-bold text-emerald-400">
-                {group.total_processed}
-              </div>
-              <div className="text-xs text-gray-400 bg-slate-700/30 px-2 py-1 rounded-lg">
-                Limite: {group.image_limit}
-              </div>
-            </div>
-            <div className="w-full bg-slate-700/50 rounded-full h-2.5 overflow-hidden">
-              <div 
-                className="bg-gradient-to-r from-emerald-500 to-emerald-400 h-2.5 rounded-full transition-all duration-1000"
-                style={{ width: `${Math.min(100, (group.total_processed || 0) / group.image_limit * 100)}%` }}
-              ></div>
-            </div>
-          </div>
-          
-          <div className="bg-slate-800/80 backdrop-blur rounded-xl p-5 shadow-md border border-slate-700/20">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-slate-700/70 p-2 rounded-lg">
-                <Image className="w-4 h-4 text-blue-400" />
-              </div>
-              <div className="text-sm text-gray-300 font-medium">Votre contribution</div>
-            </div>
-            <div className="text-2xl font-bold text-blue-400 mb-4">
-              {userStats?.processed_images}
-            </div>
-            {userStats?.processed_images && group.total_processed ? (
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-2.5 bg-slate-700/50 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-blue-500 to-blue-400 transition-all duration-1000"
-                    style={{ width: `${Math.round(userStats.processed_images / group.total_processed * 100)}%` }}
-                  ></div>
-                </div>
-                <span className="text-xs text-blue-300 whitespace-nowrap bg-slate-700/30 px-2 py-1 rounded-lg">
-                  {Math.round(userStats.processed_images / group.total_processed * 100)}% du groupe
-                </span>
-              </div>
-            ) : ''}
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-slate-800/80 backdrop-blur rounded-xl p-5 shadow-md border border-slate-700/20">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-slate-700/70 p-2 rounded-lg">
-                <Award className="w-4 h-4 text-yellow-400" />
-              </div>
-              <div className="text-sm text-gray-300 font-medium">Taux de réussite</div>
-            </div>
-            <div className="text-2xl font-bold text-yellow-400 mb-3">
-              {group.success_rate?.toFixed(1)}%
-            </div>
-            <div className="flex items-center">
-              <span className="text-xs text-gray-400 bg-slate-700/30 px-2 py-1 rounded-lg flex items-center gap-1">
-                <BarChart3 className="w-3 h-3" /> Performance collective
-              </span>
-            </div>
-          </div>
-          
-          <div className="bg-slate-800/80 backdrop-blur rounded-xl p-5 shadow-md border border-slate-700/20">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-slate-700/70 p-2 rounded-lg">
-                <Zap className="w-4 h-4 text-purple-400" />
-              </div>
-              <div className="text-sm text-gray-300 font-medium">Temps moyen</div>
-            </div>
-            <div className="text-2xl font-bold text-purple-400 mb-3">
-              {formatTime(group.avg_processing_time || 0)}
-            </div>
-            <div className="text-xs text-gray-400 bg-slate-700/30 px-2 py-1 rounded-lg w-fit flex items-center gap-1">
-              <Clock className="w-3 h-3" /> par image
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  const getOperationStats = () => {
+    if (!userStats) return null;
+
+    return [
+      {
+        icon: Maximize2,
+        name: 'Redimensionnement',
+        count: userStats.resize_count,
+        time: userStats.resize_processing_time,
+        color: 'text-blue-400'
+      },
+      {
+        icon: Wand2,
+        name: 'Traitement IA',
+        count: userStats.ai_count,
+        time: userStats.ai_processing_time,
+        color: 'text-purple-400'
+      },
+      {
+        icon: Scissors,
+        name: 'Suppression tête',
+        count: userStats.crop_head_count,
+        time: userStats.crop_head_processing_time,
+        color: 'text-red-400'
+      },
+      {
+        icon: Sparkles,
+        name: 'Tous les traitements',
+        count: userStats.all_processing_count,
+        time: userStats.all_processing_time,
+        color: 'text-amber-400'
+      }
+    ];
+  };
 
   return (
     <div className={`fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4 overflow-auto ${showAnimation ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}>
-      <div className={`bg-gradient-to-b from-slate-900 to-slate-900/95 rounded-xl shadow-2xl border border-slate-800/50 w-full max-w-4xl max-h-[90vh] flex flex-col ${showAnimation ? 'scale-100 opacity-100' : 'scale-95 opacity-0'} transition-all duration-300`}>
+      <div className={`bg-gradient-to-b from-slate-900 to-slate-900/95 rounded-xl shadow-2xl border border-slate-800/50 w-full max-w-[90vw] max-h-[90vh] flex flex-col ${showAnimation ? 'scale-100 opacity-100' : 'scale-95 opacity-0'} transition-all duration-300`}>
         <div className="px-6 py-4 border-b border-slate-800/50 flex items-center justify-between sticky top-0 z-10 backdrop-blur bg-slate-900/90">
           <div className="flex items-center gap-3">
             <div className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 p-2.5 rounded-xl">
@@ -361,87 +306,34 @@ export function StatsModal({ onClose, stats }: StatsModalProps) {
               <div className="text-emerald-400 animate-pulse">Chargement des statistiques...</div>
             </div>
           ) : (
-            <div className="space-y-8">
-              {userStats?.group ? (
-                <GroupSection group={userStats.group} />
-              ) : null}
-
-              <div className="bg-gradient-to-b from-slate-800 to-slate-800/80 rounded-xl shadow-xl border border-slate-700/10">
-                <div className="bg-slate-700/20 backdrop-blur px-6 py-4 border-b border-slate-700/30">
-                  <SectionHeader 
-                    icon={Info} 
-                    title="Statistiques générales" 
-                  />
-                </div>
-                
-                <div className="p-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <StatCard 
-                      icon={Image} 
-                      title="Images traitées" 
-                      value={stats.processedImages.toLocaleString()} 
-                      subtitle="Total"
-                      index={0}
-                    />
-                    <StatCard 
-                      icon={Award} 
-                      title="Taux de réussite" 
-                      value={`${stats.successRate.toFixed(1)}%`} 
-                      subtitle={stats.successRate > 80 ? "Excellent" : (stats.successRate < 50 ? "À améliorer" : "Acceptable")}
-                      valueClassName={stats.successRate > 80 ? "text-emerald-400" : (stats.successRate < 50 ? "text-red-400" : "text-yellow-400")}
-                      index={1}
-                    />
-                    <StatCard 
-                      icon={Zap} 
-                      title="Temps moyen" 
-                      value={formatTime(stats.averageProcessingTime)} 
-                      subtitle="par image"
-                      valueClassName="text-blue-400"
-                      index={2}
-                    />
-                    <StatCard 
-                      icon={Timer} 
-                      title="Temps total" 
-                      value={formatLongTime(stats.totalProcessingTime)} 
-                      subtitle="de traitement"
-                      valueClassName="text-purple-400"
-                      index={3}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="space-y-8">
                 <div className="bg-gradient-to-b from-slate-800 to-slate-800/80 rounded-xl shadow-xl border border-slate-700/10">
                   <div className="bg-slate-700/20 backdrop-blur px-6 py-4 border-b border-slate-700/30">
                     <SectionHeader 
-                      icon={CheckCircle2} 
-                      title="Détails des traitements" 
+                      icon={Info} 
+                      title="Statistiques globales" 
                     />
                   </div>
-                  <div className="p-5 space-y-2">
-                    <DetailRow 
-                      icon={CheckCircle2} 
-                      title="Images réussies" 
-                      value={stats.successCount.toLocaleString()} 
-                      index={0}
-                    />
-                    <DetailRow 
-                      icon={XCircle} 
-                      title="Images échouées" 
-                      value={stats.failureCount.toLocaleString()} 
-                      iconColor="text-red-400" 
-                      valueColor="text-red-400" 
-                      index={1}
-                    />
-                    <DetailRow 
-                      icon={Activity} 
-                      title="Taux de conversion" 
-                      value={`${(stats.successCount / (stats.successCount + stats.failureCount) * 100).toFixed(1)}%`} 
-                      iconColor="text-blue-400" 
-                      valueColor="text-blue-400" 
-                      index={2}
-                    />
+                  
+                  <div className="p-6">
+                    <div className="grid grid-cols-2 gap-6">
+                      <StatCard 
+                        icon={Image} 
+                        title="Images traitées" 
+                        value={stats.processedImages.toLocaleString()} 
+                        subtitle="Total"
+                        index={0}
+                      />
+                      <StatCard 
+                        icon={Award} 
+                        title="Taux de réussite" 
+                        value={`${stats.successRate.toFixed(1)}%`} 
+                        subtitle={stats.successRate > 80 ? "Excellent" : (stats.successRate < 50 ? "À améliorer" : "Acceptable")}
+                        valueClassName={stats.successRate > 80 ? "text-emerald-400" : (stats.successRate < 50 ? "text-red-400" : "text-yellow-400")}
+                        index={1}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -452,31 +344,143 @@ export function StatsModal({ onClose, stats }: StatsModalProps) {
                       title="Temps de traitement" 
                     />
                   </div>
-                  <div className="p-5 space-y-2">
-                    <DetailRow 
-                      icon={Timer} 
-                      title="Durée totale" 
-                      value={formatLongTime(stats.totalProcessingTime)}
-                      index={0}
-                    />
-                    <DetailRow 
-                      icon={Clock} 
-                      title="Temps moyen" 
-                      value={formatTime(stats.averageProcessingTime)} 
-                      valueColor="text-blue-400"
-                      iconColor="text-blue-400"
-                      index={1}
-                    />
-                    <DetailRow 
-                      icon={TrendingUp} 
-                      title="Évaluation d'efficacité" 
-                      value={stats.successRate > 70 ? "Optimale" : (stats.successRate > 50 ? "Correcte" : "À améliorer")}
-                      iconColor="text-yellow-400"
-                      valueColor="text-yellow-400"
-                      index={2}
-                    />
+                  
+                  <div className="p-6">
+                    <div className="grid grid-cols-2 gap-6">
+                      <StatCard 
+                        icon={Zap} 
+                        title="Temps moyen" 
+                        value={formatTime(stats.averageProcessingTime)} 
+                        subtitle="par image"
+                        valueClassName="text-blue-400"
+                        index={2}
+                      />
+                      <StatCard 
+                        icon={Clock} 
+                        title="Temps total" 
+                        value={formatLongTime(stats.totalProcessingTime)} 
+                        subtitle="de traitement"
+                        valueClassName="text-purple-400"
+                        index={3}
+                      />
+                    </div>
                   </div>
                 </div>
+
+                {userStats?.group && (
+                  <div className="bg-gradient-to-b from-slate-800 to-slate-800/80 rounded-xl shadow-xl border border-slate-700/10">
+                    <div className="bg-slate-700/20 backdrop-blur px-6 py-4 border-b border-slate-700/30">
+                      <SectionHeader 
+                        icon={Users} 
+                        title={`Groupe ${userStats.group.name}`} 
+                        subtitle="Statistiques collectives" 
+                      />
+                    </div>
+                    
+                    <div className="p-6">
+                      <div className="space-y-6">
+                        <div className="bg-slate-800/80 backdrop-blur rounded-xl p-5 shadow-md border border-slate-700/20">
+                          <div className="flex justify-between items-center mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-slate-700/70 p-2 rounded-lg">
+                                <Image className="w-4 h-4 text-emerald-400" />
+                              </div>
+                              <div className="text-sm text-gray-300 font-medium">Images groupe</div>
+                            </div>
+                            <div className="text-xs text-gray-400 bg-slate-700/50 px-3 py-1 rounded-full border border-slate-600/30">
+                              {Math.min(100, Math.round((userStats.group.total_processed || 0) / userStats.group.image_limit * 100))}% utilisé
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-end mb-4">
+                            <div className="text-2xl font-bold text-emerald-400">
+                              {userStats.group.total_processed}
+                            </div>
+                            <div className="text-xs text-gray-400 bg-slate-700/30 px-2 py-1 rounded-lg">
+                              Limite: {userStats.group.image_limit}
+                            </div>
+                          </div>
+                          <div className="w-full bg-slate-700/50 rounded-full h-2.5 overflow-hidden">
+                            <div 
+                              className="bg-gradient-to-r from-emerald-500 to-emerald-400 h-2.5 rounded-full transition-all duration-1000"
+                              style={{ width: `${Math.min(100, (userStats.group.total_processed || 0) / userStats.group.image_limit * 100)}%` }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-800/80 backdrop-blur rounded-xl p-5 shadow-md border border-slate-700/20">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="bg-slate-700/70 p-2 rounded-lg">
+                              <Image className="w-4 h-4 text-blue-400" />
+                            </div>
+                            <div className="text-sm text-gray-300 font-medium">Votre contribution</div>
+                          </div>
+                          <div className="text-2xl font-bold text-blue-400 mb-4">
+                            {userStats.processed_images}
+                          </div>
+                          {userStats.processed_images && userStats.group.total_processed ? (
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1 h-2.5 bg-slate-700/50 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-gradient-to-r from-blue-500 to-blue-400 transition-all duration-1000"
+                                  style={{ width: `${Math.round(userStats.processed_images / userStats.group.total_processed * 100)}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-xs text-blue-300 whitespace-nowrap bg-slate-700/30 px-2 py-1 rounded-lg">
+                                {Math.round(userStats.processed_images / userStats.group.total_processed * 100)}% du groupe
+                              </span>
+                            </div>
+                          ) : ''}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-8">
+                {userStats && (
+                  <div className="bg-gradient-to-b from-slate-800 to-slate-800/80 rounded-xl shadow-xl border border-slate-700/10">
+                    <div className="bg-slate-700/20 backdrop-blur px-6 py-4 border-b border-slate-700/30">
+                      <SectionHeader 
+                        icon={Layers} 
+                        title="Statistiques par type d'opération" 
+                      />
+                    </div>
+                    
+                    <div className="p-6">
+                      <div className="space-y-4">
+                        {getOperationStats()?.map((op, index) => (
+                          <div key={op.name} className="bg-slate-800/80 backdrop-blur rounded-xl p-5 shadow-md border border-slate-700/20">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="bg-slate-700/70 p-2 rounded-lg">
+                                <op.icon className={`w-4 h-4 ${op.color}`} />
+                              </div>
+                              <div className="text-sm text-gray-300 font-medium">{op.name}</div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-2xl font-bold mb-1 text-gray-200">
+                                  {op.count}
+                                </div>
+                                <div className="text-xs text-gray-400">
+                                  images traitées
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className={`text-sm font-medium ${op.color}`}>
+                                  {formatTime(op.time / (op.count || 1))}
+                                </div>
+                                <div className="text-xs text-gray-400">
+                                  temps moyen
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

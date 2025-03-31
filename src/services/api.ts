@@ -145,9 +145,25 @@ async function fetchWithRetry(
 // Initialize request queue
 const requestQueue = new RequestQueue(3);
 
+// Function to remove background
+async function removeBackgroundOnly(file: File | Blob): Promise<Blob> {
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const response = await fetchWithRetry(
+    `${API_BASE_URL}/remove-background`,
+    {
+      method: 'POST',
+      body: formData
+    }
+  );
+
+  return response.blob();
+}
+
 // Process image with multiple treatments
 async function processImage(
-  file: File,
+  file: File | Blob,
   options: {
     remove_bg?: boolean;
     crop_mouth?: boolean;
@@ -188,53 +204,59 @@ export async function removeBackground(
 ): Promise<{ url: string; width: number; height: number }> {
   const startTime = performance.now();
   let success = false;
-  let shouldTrackStats = true; // Track stats for all processing
+  let shouldTrackStats = true;
 
   try {
     let resultBlob: Blob;
     let finalWidth: number;
     let finalHeight: number;
 
-    // Queue the API requests with retries
     await requestQueue.add(async () => {
-      const options: any = {};
+      if (dimensions?.mode === 'all') {
+        // First process with initial treatments
+        const initialOptions = {
+          crop_mouth: true,
+          resize: true,
+          width: dimensions.width,
+          height: dimensions.height,
+          mode: 'fit',
+          keep_ratio: true
+        };
+        
+        // Process initial treatments
+        const initialResult = await processImage(file, initialOptions);
+        
+        // Then process with AI
+        resultBlob = await removeBackgroundOnly(initialResult);
+      } else {
+        const options: any = {};
 
-      // Handle different processing modes
-      switch (dimensions?.mode) {
-        case 'all':
-          options.remove_bg = true;
-          options.crop_mouth = true;
-          options.resize = true;
-          options.width = dimensions.width;
-          options.height = dimensions.height;
-          options.mode = 'fit';
-          options.keep_ratio = true;
-          break;
-        case 'both':
-          options.remove_bg = true;
-          options.resize = true;
-          options.width = dimensions.width;
-          options.height = dimensions.height;
-          options.mode = 'fit';
-          options.keep_ratio = true;
-          break;
-        case 'resize':
-          options.resize = true;
-          options.width = dimensions.width;
-          options.height = dimensions.height;
-          options.mode = 'fit';
-          options.keep_ratio = true;
-          break;
-        case 'ai':
-          options.remove_bg = true;
-          break;
-        case 'crop-head':
-          options.crop_mouth = true;
-          break;
+        switch (dimensions?.mode) {
+          case 'both':
+            options.remove_bg = true;
+            options.resize = true;
+            options.width = dimensions.width;
+            options.height = dimensions.height;
+            options.mode = 'fit';
+            options.keep_ratio = true;
+            break;
+          case 'resize':
+            options.resize = true;
+            options.width = dimensions.width;
+            options.height = dimensions.height;
+            options.mode = 'fit';
+            options.keep_ratio = true;
+            break;
+          case 'ai':
+            options.remove_bg = true;
+            break;
+          case 'crop-head':
+            options.crop_mouth = true;
+            break;
+        }
+
+        resultBlob = await processImage(file, options);
       }
-
-      // Process image with combined treatments
-      resultBlob = await processImage(file, options);
 
       // Get dimensions from the processed image
       const img = await createImageBitmap(resultBlob);
@@ -256,7 +278,6 @@ export async function removeBackground(
     console.error('Error processing image:', error);
     throw new Error(error.message || 'Failed to process image');
   } finally {
-    // Track stats for all processing
     const processingTime = (performance.now() - startTime) / 1000;
     window.dispatchEvent(new CustomEvent('imageProcessed', {
       detail: {

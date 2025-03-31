@@ -2,7 +2,9 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   X, Shield, Users, Settings, UserCog, LayoutGrid, ChevronLeft, 
   Bell, Database, Eye, Clock, Loader2, AlertTriangle, CheckCircle, 
-  Filter, Search, Download, LifeBuoy
+  Filter, Search, Download, LifeBuoy, Maximize2, Wand2, Scissors,
+  Sparkles, Layers, Activity, BarChart3, TrendingUp, Timer,
+  ChevronDown, ChevronUp
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { UserManagement } from './UserManagement';
@@ -19,7 +21,7 @@ export function AdminSettingsModal({ onClose }: AdminSettingsModalProps) {
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'groups' | 'users' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'users-groups' | 'settings'>('dashboard');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -29,7 +31,18 @@ export function AdminSettingsModal({ onClose }: AdminSettingsModalProps) {
 
   // Stats pour le dashboard
   const stats = useMemo(() => {
-    if (!users.length) return { totalUsers: 0, totalProcessed: 0, avgSuccess: 0, avgTime: 0 };
+    if (!users.length) return {
+      totalUsers: 0,
+      totalProcessed: 0,
+      avgSuccess: 0,
+      avgTime: 0,
+      operationStats: {
+        resize: { count: 0, time: 0 },
+        ai: { count: 0, time: 0 },
+        cropHead: { count: 0, time: 0 },
+        all: { count: 0, time: 0 }
+      }
+    };
     
     const totalUsers = users.length;
     const totalProcessed = users.reduce((sum, user) => sum + (user.processed_images || 0), 0);
@@ -37,8 +50,33 @@ export function AdminSettingsModal({ onClose }: AdminSettingsModalProps) {
     const avgSuccess = totalProcessed > 0 ? (totalSuccess / totalProcessed) * 100 : 0;
     const totalTime = users.reduce((sum, user) => sum + (user.total_processing_time || 0), 0);
     const avgTime = totalProcessed > 0 ? totalTime / totalProcessed : 0;
+
+    // Calcul des statistiques par type d'opération
+    const operationStats = users.reduce((acc, user) => ({
+      resize: {
+        count: acc.resize.count + (user.resize_count || 0),
+        time: acc.resize.time + (user.resize_processing_time || 0)
+      },
+      ai: {
+        count: acc.ai.count + (user.ai_count || 0),
+        time: acc.ai.time + (user.ai_processing_time || 0)
+      },
+      cropHead: {
+        count: acc.cropHead.count + (user.crop_head_count || 0),
+        time: acc.cropHead.time + (user.crop_head_processing_time || 0)
+      },
+      all: {
+        count: acc.all.count + (user.all_processing_count || 0),
+        time: acc.all.time + (user.all_processing_time || 0)
+      }
+    }), {
+      resize: { count: 0, time: 0 },
+      ai: { count: 0, time: 0 },
+      cropHead: { count: 0, time: 0 },
+      all: { count: 0, time: 0 }
+    });
     
-    return { totalUsers, totalProcessed, avgSuccess, avgTime };
+    return { totalUsers, totalProcessed, avgSuccess, avgTime, operationStats };
   }, [users]);
   
   // Gestionnaires d'événements
@@ -252,27 +290,15 @@ export function AdminSettingsModal({ onClose }: AdminSettingsModalProps) {
         </button>
         
         <button 
-          onClick={() => setActiveTab('users')}
+          onClick={() => setActiveTab('users-groups')}
           className={`w-full px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
-            activeTab === 'users' 
-              ? 'bg-emerald-500/20 text-emerald-500' 
-              : 'text-gray-400 hover:bg-slate-800/50 hover:text-gray-200'
-          }`}
-        >
-          <UserCog className="w-5 h-5" />
-          <span>Utilisateurs</span>
-        </button>
-        
-        <button 
-          onClick={() => setActiveTab('groups')}
-          className={`w-full px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
-            activeTab === 'groups' 
+            activeTab === 'users-groups' 
               ? 'bg-emerald-500/20 text-emerald-500' 
               : 'text-gray-400 hover:bg-slate-800/50 hover:text-gray-200'
           }`}
         >
           <Users className="w-5 h-5" />
-          <span>Groupes</span>
+          <span>Utilisateurs & Groupes</span>
         </button>
         
         <button 
@@ -348,6 +374,112 @@ export function AdminSettingsModal({ onClose }: AdminSettingsModalProps) {
           <p className="text-3xl font-bold text-gray-100">{formatTime(stats.avgTime)}</p>
         </div>
       </div>
+
+      {/* Statistiques par type d'opération */}
+      <div className="bg-slate-800/40 rounded-xl border border-gray-700/50 p-6 backdrop-blur-sm shadow-md">
+        <h3 className="text-lg font-semibold text-gray-200 mb-6 flex items-center gap-2">
+          <Activity className="w-5 h-5 text-emerald-500" />
+          Statistiques par type d'opération
+        </h3>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Redimensionnement */}
+          <div className="bg-slate-700/30 rounded-xl p-5">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-blue-500/10 p-2 rounded-lg">
+                <Maximize2 className="w-5 h-5 text-blue-400" />
+              </div>
+              <h4 className="font-medium text-gray-300">Redimensionnement</h4>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <div className="text-2xl font-bold text-blue-400">
+                  {stats.operationStats.resize.count.toLocaleString()}
+                </div>
+                <div className="text-sm text-gray-400 mt-1">images traitées</div>
+              </div>
+              <div>
+                <div className="text-lg font-medium text-blue-400">
+                  {formatTime(stats.operationStats.resize.time / (stats.operationStats.resize.count || 1))}
+                </div>
+                <div className="text-sm text-gray-400">temps moyen</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Traitement IA */}
+          <div className="bg-slate-700/30 rounded-xl p-5">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-purple-500/10 p-2 rounded-lg">
+                <Wand2 className="w-5 h-5 text-purple-400" />
+              </div>
+              <h4 className="font-medium text-gray-300">Traitement IA</h4>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <div className="text-2xl font-bold text-purple-400">
+                  {stats.operationStats.ai.count.toLocaleString()}
+                </div>
+                <div className="text-sm text-gray-400 mt-1">images traitées</div>
+              </div>
+              <div>
+                <div className="text-lg font-medium text-purple-400">
+                  {formatTime(stats.operationStats.ai.time / (stats.operationStats.ai.count || 1))}
+                </div>
+                <div className="text-sm text-gray-400">temps moyen</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Suppression tête */}
+          <div className="bg-slate-700/30 rounded-xl p-5">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-red-500/10 p-2 rounded-lg">
+                <Scissors className="w-5 h-5 text-red-400" />
+              </div>
+              <h4 className="font-medium text-gray-300">Suppression tête</h4>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <div className="text-2xl font-bold text-red-400">
+                  {stats.operationStats.cropHead.count.toLocaleString()}
+                </div>
+                <div className="text-sm text-gray-400 mt-1">images traitées</div>
+              </div>
+              <div>
+                <div className="text-lg font-medium text-red-400">
+                  {formatTime(stats.operationStats.cropHead.time / (stats.operationStats.cropHead.count || 1))}
+                </div>
+                <div className="text-sm text-gray-400">temps moyen</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tous les traitements */}
+          <div className="bg-slate-700/30 rounded-xl p-5">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-amber-500/10 p-2 rounded-lg">
+                <Sparkles className="w-5 h-5 text-amber-400" />
+              </div>
+              <h4 className="font-medium text-gray-300">Tous les traitements</h4>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <div className="text-2xl font-bold text-amber-400">
+                  {stats.operationStats.all.count.toLocaleString()}
+                </div>
+                <div className="text-sm text-gray-400 mt-1">images traitées</div>
+              </div>
+              <div>
+                <div className="text-lg font-medium text-amber-400">
+                  {formatTime(stats.operationStats.all.time / (stats.operationStats.all.count || 1))}
+                </div>
+                <div className="text-sm text-gray-400">temps moyen</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-slate-800/40 rounded-xl border border-gray-700/50 p-4 backdrop-blur-sm shadow-md">
@@ -357,7 +489,7 @@ export function AdminSettingsModal({ onClose }: AdminSettingsModalProps) {
               Groupes récents
             </h3>
             <button 
-              onClick={() => setActiveTab('groups')}
+              onClick={() => setActiveTab('users-groups')}
               className="text-sm text-emerald-500 hover:text-emerald-400 transition-colors"
             >
               Voir tous
@@ -371,7 +503,7 @@ export function AdminSettingsModal({ onClose }: AdminSettingsModalProps) {
                 className="bg-slate-700/30 rounded-lg p-3 hover:bg-slate-700/50 transition-colors cursor-pointer"
                 onClick={() => {
                   setSelectedGroup(group);
-                  setActiveTab('groups');
+                  setActiveTab('users-groups');
                 }}
               >
                 <div className="flex items-center justify-between mb-2">
@@ -410,7 +542,7 @@ export function AdminSettingsModal({ onClose }: AdminSettingsModalProps) {
               Utilisateurs actifs
             </h3>
             <button 
-              onClick={() => setActiveTab('users')}
+              onClick={() => setActiveTab('users-groups')}
               className="text-sm text-emerald-500 hover:text-emerald-400 transition-colors"
             >
               Voir tous
@@ -491,56 +623,11 @@ export function AdminSettingsModal({ onClose }: AdminSettingsModalProps) {
         {/* Active Tab Content */}
         {activeTab === 'dashboard' && <DashboardTab />}
         
-        {activeTab === 'users' && (
+        {activeTab === 'users-groups' && (
           <div className="h-full">
             <UserManagement
               users={users}
               groups={groups}
-              selectedGroup={selectedGroup}
-              groupMembers={groupMembers}
-              onCreateGroup={handleCreateGroup}
-              onDeleteGroup={handleDeleteGroup}
-              onSelectGroup={setSelectedGroup}
-              onAddUserToGroup={handleAddUserToGroup}
-              onRemoveUserFromGroup={handleRemoveUserFromGroup}
-              onUpdateGroupLimit={handleUpdateGroupLimit}
-              formatTime={formatTime}
-            />
-          </div>
-        )}
-        
-        {activeTab === 'groups' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-100 flex items-center gap-2">
-                <Users className="w-6 h-6 text-emerald-500" />
-                Gestion des groupes
-              </h2>
-              
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <input
-                    type="text"
-                    placeholder="Rechercher un groupe..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="bg-slate-800/60 border border-gray-700/50 rounded-lg pl-9 pr-4 py-2 text-gray-200 w-60 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                  />
-                </div>
-                
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="p-2 bg-slate-800/60 border border-gray-700/50 rounded-lg text-gray-400 hover:text-gray-200 transition-colors"
-                >
-                  <Filter className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-            
-            <UserManagement
-              users={users}
-              groups={filteredGroups}
               selectedGroup={selectedGroup}
               groupMembers={groupMembers}
               onCreateGroup={handleCreateGroup}

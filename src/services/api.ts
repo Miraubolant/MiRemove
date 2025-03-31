@@ -145,47 +145,33 @@ async function fetchWithRetry(
 // Initialize request queue
 const requestQueue = new RequestQueue(3);
 
-// Function to remove background
-async function removeBackgroundOnly(file: File, model: string = 'bria'): Promise<Blob> {
+// Process image with multiple treatments
+async function processImage(
+  file: File,
+  options: {
+    remove_bg?: boolean;
+    crop_mouth?: boolean;
+    resize?: boolean;
+    width?: number;
+    height?: number;
+    mode?: string;
+    keep_ratio?: boolean;
+  }
+): Promise<Blob> {
   const formData = new FormData();
   formData.append('image', file);
 
-  const response = await fetchWithRetry(
-    `${API_BASE_URL}/remove-background?model=${model}`,
-    {
-      method: 'POST',
-      body: formData
+  const queryParams = new URLSearchParams();
+  
+  // Add all options to query params
+  Object.entries(options).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      queryParams.append(key, value.toString());
     }
-  );
-
-  return response.blob();
-}
-
-// Function to resize image
-async function resizeImage(file: File | Blob, dimensions: { width: number; height: number; tool?: string }, originalName: string): Promise<Blob> {
-  const formData = new FormData();
-  
-  // If it's a Blob from background removal, convert to JPG first
-  const imageToUpload = file instanceof File ? file : await convertToJPG(file, originalName);
-  
-  // Use original filename but change extension to .jpg if it's a blob
-  const fileName = file instanceof File 
-    ? originalName 
-    : originalName.substring(0, originalName.lastIndexOf('.')) + '.jpg';
-  
-  formData.append('image', imageToUpload, fileName);
-
-  const queryParams = new URLSearchParams({
-    width: dimensions.width.toString(),
-    height: dimensions.height.toString(),
-    mode: 'fit',
-    keep_ratio: 'true',
-    resampling: 'lanczos',
-    ...(dimensions.tool && { tool: dimensions.tool })
   });
 
   const response = await fetchWithRetry(
-    `${API_BASE_URL}/resize?${queryParams.toString()}`,
+    `${API_BASE_URL}/process-image?${queryParams.toString()}`,
     {
       method: 'POST',
       body: formData
@@ -198,11 +184,11 @@ async function resizeImage(file: File | Blob, dimensions: { width: number; heigh
 export async function removeBackground(
   file: File, 
   model: string = 'bria',
-  dimensions?: { width: number; height: number; tool?: string; mode?: 'resize' | 'ai' | 'both' } | null
+  dimensions?: { width: number; height: number; tool?: string; mode?: 'resize' | 'ai' | 'both' | 'crop-head' | 'all' } | null
 ): Promise<{ url: string; width: number; height: number }> {
   const startTime = performance.now();
   let success = false;
-  let shouldTrackStats = false; // Only track stats for AI processing
+  let shouldTrackStats = true; // Track stats for all processing
 
   try {
     let resultBlob: Blob;
@@ -211,37 +197,50 @@ export async function removeBackground(
 
     // Queue the API requests with retries
     await requestQueue.add(async () => {
-      if (dimensions?.mode === 'resize') {
-        // Only resize - don't track stats
-        resultBlob = await resizeImage(file, dimensions, file.name);
-        finalWidth = dimensions.width;
-        finalHeight = dimensions.height;
-      } else if (dimensions?.mode === 'ai') {
-        // Only AI processing - track stats and preserve original dimensions
-        shouldTrackStats = true;
-        resultBlob = await removeBackgroundOnly(file, model);
-        // Get dimensions from the processed image
-        const img = await createImageBitmap(resultBlob);
-        finalWidth = img.width;
-        finalHeight = img.height;
-        img.close();
-      } else if (dimensions?.mode === 'both') {
-        // Both resize and AI - track stats
-        shouldTrackStats = true;
-        const aiProcessedBlob = await removeBackgroundOnly(file, model);
-        resultBlob = await resizeImage(aiProcessedBlob, dimensions, file.name);
-        finalWidth = dimensions.width;
-        finalHeight = dimensions.height;
-      } else {
-        // Default to AI only if no mode specified
-        shouldTrackStats = true;
-        resultBlob = await removeBackgroundOnly(file, model);
-        // Get dimensions from the processed image
-        const img = await createImageBitmap(resultBlob);
-        finalWidth = img.width;
-        finalHeight = img.height;
-        img.close();
+      const options: any = {};
+
+      // Handle different processing modes
+      switch (dimensions?.mode) {
+        case 'all':
+          options.remove_bg = true;
+          options.crop_mouth = true;
+          options.resize = true;
+          options.width = dimensions.width;
+          options.height = dimensions.height;
+          options.mode = 'fit';
+          options.keep_ratio = true;
+          break;
+        case 'both':
+          options.remove_bg = true;
+          options.resize = true;
+          options.width = dimensions.width;
+          options.height = dimensions.height;
+          options.mode = 'fit';
+          options.keep_ratio = true;
+          break;
+        case 'resize':
+          options.resize = true;
+          options.width = dimensions.width;
+          options.height = dimensions.height;
+          options.mode = 'fit';
+          options.keep_ratio = true;
+          break;
+        case 'ai':
+          options.remove_bg = true;
+          break;
+        case 'crop-head':
+          options.crop_mouth = true;
+          break;
       }
+
+      // Process image with combined treatments
+      resultBlob = await processImage(file, options);
+
+      // Get dimensions from the processed image
+      const img = await createImageBitmap(resultBlob);
+      finalWidth = img.width;
+      finalHeight = img.height;
+      img.close();
     });
 
     // Create object URL from the final blob
@@ -257,15 +256,13 @@ export async function removeBackground(
     console.error('Error processing image:', error);
     throw new Error(error.message || 'Failed to process image');
   } finally {
-    // Only dispatch stats event if we performed AI processing
-    if (shouldTrackStats) {
-      const processingTime = (performance.now() - startTime) / 1000;
-      window.dispatchEvent(new CustomEvent('imageProcessed', {
-        detail: {
-          success,
-          processingTime
-        }
-      }));
-    }
+    // Track stats for all processing
+    const processingTime = (performance.now() - startTime) / 1000;
+    window.dispatchEvent(new CustomEvent('imageProcessed', {
+      detail: {
+        success,
+        processingTime
+      }
+    }));
   }
 }

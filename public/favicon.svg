@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fond dégradé -->
+  <rect width="512" height="512" rx="128" fill="url(#gradient)" />
+  
+  <!-- Baguette magique stylisée -->
+  <path d="M384 160L160 384M384 160L352 128M384 160L416 192M160 384L128 352M160 384L192 416" 
+    stroke="white" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Étincelles -->
+  <circle cx="384" cy="160" r="24" fill="white" />
+  <circle cx="160" cy="384" r="24" fill="white" />
+  
+  <!-- Particules magiques -->
+  <circle cx="256" cy="256" r="8" fill="white" opacity="0.6">
+    <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite" />
+  </circle>
+  <circle cx="320" cy="192" r="6" fill="white" opacity="0.4">
+    <animate attributeName="opacity" values="0.4;0.8;0.4" dur="1.5s" repeatCount="indefinite" />
+  </circle>
+  <circle cx="192" cy="320" r="6" fill="white" opacity="0.4">
+    <animate attributeName="opacity" values="0.4;0.8;0.4" dur="1.8s" repeatCount="indefinite" />
+  </circle>
+  
+  <!-- Définition du dégradé -->
+  <defs>
+    <linearGradient id="gradient" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+</svg>

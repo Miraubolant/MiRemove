@@ -11,9 +11,7 @@ interface ModelSelectorProps {
   hasPendingFiles: boolean;
   hasCompletedFiles?: boolean;
   onDownloadAllJpg?: () => void;
-  onApplyWhiteBackground?: () => void;
   onDeleteAll?: () => void;
-  hasWhiteBackground?: boolean;
   isProcessing?: boolean;
   totalToProcess?: number;
   completed?: number;
@@ -239,9 +237,9 @@ export function ModelSelector({
           <button
             type="submit"
             onClick={handleSubmit}
-            disabled={isProcessing || !hasPendingFiles}
+            disabled={!hasPendingFiles}
             className={`h-[48px] px-6 rounded-xl font-medium shadow-lg transition-all duration-300 flex items-center gap-3 min-w-[220px] ${
-              !isProcessing && hasPendingFiles
+              hasPendingFiles
                 ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600 hover:scale-102 active:scale-98'
                 : 'bg-slate-800/90 text-gray-500 cursor-not-allowed border border-slate-700/50'
             }`}

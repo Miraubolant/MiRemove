@@ -210,7 +210,6 @@ export async function removeBackground(
 ): Promise<{ url: string; width: number; height: number }> {
   const startTime = performance.now();
   let success = false;
-  let shouldTrackStats = true;
 
   try {
     let resultBlob: Blob;
@@ -258,6 +257,13 @@ export async function removeBackground(
             break;
           case 'crop-head':
             options.crop_mouth = true;
+            if (dimensions.width && dimensions.height) {
+              options.resize = true;
+              options.width = dimensions.width;
+              options.height = dimensions.height;
+              options.mode = 'fit';
+              options.keep_ratio = true;
+            }
             break;
         }
 
@@ -274,16 +280,8 @@ export async function removeBackground(
     // Create object URL from the final blob
     const resultUrl = URL.createObjectURL(resultBlob);
     success = true;
-    return {
-      url: resultUrl,
-      width: finalWidth,
-      height: finalHeight
-    };
-  } catch (error) {
-    success = false;
-    console.error('Error processing image:', error);
-    throw new Error(error.message || 'Failed to process image');
-  } finally {
+
+    // Track processing time and dispatch event
     const processingTime = (performance.now() - startTime) / 1000;
     window.dispatchEvent(new CustomEvent('imageProcessed', {
       detail: {
@@ -292,5 +290,26 @@ export async function removeBackground(
         operation: dimensions?.mode || 'ai'
       }
     }));
+
+    return {
+      url: resultUrl,
+      width: finalWidth,
+      height: finalHeight
+    };
+  } catch (error) {
+    success = false;
+    console.error('Error processing image:', error);
+
+    // Track failed processing
+    const processingTime = (performance.now() - startTime) / 1000;
+    window.dispatchEvent(new CustomEvent('imageProcessed', {
+      detail: {
+        success,
+        processingTime,
+        operation: dimensions?.mode || 'ai'
+      }
+    }));
+
+    throw new Error(error.message || 'Failed to process image');
   }
 }

@@ -19,7 +19,8 @@ const processingModes = [
     description: 'Redimensionner uniquement', 
     icon: Maximize2,
     badgeColor: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-    iconColor: 'text-blue-400'
+    iconColor: 'text-blue-400',
+    showDimensions: true
   },
   { 
     id: 'ai', 
@@ -27,7 +28,8 @@ const processingModes = [
     description: 'Supprimer l\'arrière-plan', 
     icon: Wand2,
     badgeColor: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
-    iconColor: 'text-purple-400'
+    iconColor: 'text-purple-400',
+    showDimensions: false
   },
   { 
     id: 'both', 
@@ -35,7 +37,8 @@ const processingModes = [
     description: 'Les deux traitements', 
     icon: Layers,
     badgeColor: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-    iconColor: 'text-emerald-400'
+    iconColor: 'text-emerald-400',
+    showDimensions: true
   },
   { 
     id: 'crop-head', 
@@ -43,7 +46,8 @@ const processingModes = [
     description: 'Recadrer sous le menton', 
     icon: Scissors,
     badgeColor: 'bg-red-500/15 text-red-400 border-red-500/30',
-    iconColor: 'text-red-400'
+    iconColor: 'text-red-400',
+    showDimensions: true
   },
   { 
     id: 'all', 
@@ -51,7 +55,8 @@ const processingModes = [
     description: 'Appliquer tous les traitements', 
     icon: Sparkles,
     badgeColor: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-    iconColor: 'text-amber-400'
+    iconColor: 'text-amber-400',
+    showDimensions: true
   }
 ] as const;
 
@@ -81,7 +86,7 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
   const ModeIcon = currentMode.icon;
 
   // Determine if dimensions should be shown
-  const showDimensions = config.mode === 'resize' || config.mode === 'both' || config.mode === 'all';
+  const showDimensions = currentMode.showDimensions;
 
   return (
     <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200">
@@ -189,7 +194,7 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
                 </button>
               </div>
 
-              {/* Dimensions - Only show if mode includes resizing */}
+              {/* Dimensions - Show for resize, both, crop-head and all modes */}
               {showDimensions && (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 pb-1">

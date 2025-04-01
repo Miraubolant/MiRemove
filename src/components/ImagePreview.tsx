@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Loader2, X, Info, ZoomIn, Play, Check, Maximize2, Wand2 } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Loader2, X, Info, ZoomIn, Play, Check, Maximize2, Wand2, Scissors, Sparkles } from 'lucide-react';
 import { ImageFile } from '../types';
 import { ImageModal } from './ImageModal';
 import { AuthModal } from './AuthModal';
@@ -9,7 +9,7 @@ interface ImagePreviewProps {
   file: ImageFile;
   onRemove: (id: string) => void;
   onProcess: (file: ImageFile) => Promise<void>;
-  outputDimensions?: { width: number; height: number; tool?: string; mode?: 'resize' | 'ai' | 'both' } | null;
+  outputDimensions?: { width: number; height: number; tool?: string; mode?: 'resize' | 'ai' | 'both' | 'crop-head' | 'all' } | null;
 }
 
 export function ImagePreview({ 
@@ -23,6 +23,7 @@ export function ImagePreview({
   const [showModal, setShowModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const { user } = useAuthStore();
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 B';
@@ -38,7 +39,38 @@ export function ImagePreview({
       setShowAuthModal(true);
       return;
     }
-    await onProcess(file);
+
+    // Create new AbortController for this request
+    abortControllerRef.current = new AbortController();
+    
+    try {
+      await onProcess(file);
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        console.log('Request aborted');
+      } else {
+        console.error('Processing error:', err);
+      }
+    }
+  };
+
+  const handleRemove = () => {
+    // Abort any ongoing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+
+    // Clean up object URLs
+    if (file.preview) {
+      URL.revokeObjectURL(file.preview);
+    }
+    if (file.result) {
+      URL.revokeObjectURL(file.result);
+    }
+
+    // Call original remove handler
+    onRemove(file.id);
   };
 
   // Determine if we should show white background
@@ -70,6 +102,18 @@ export function ImagePreview({
           icon: isResized ? <Maximize2 className="w-3 h-3 text-emerald-400" /> : <Wand2 className="w-3 h-3 text-emerald-400" />,
           text: `${width}×${height}`,
           className: "bg-emerald-500/10 text-emerald-400"
+        };
+      } else if (file.processingMode === 'crop-head') {
+        return {
+          icon: <Scissors className="w-3 h-3 text-red-400" />,
+          text: `${width}×${height}`,
+          className: "bg-red-500/10 text-red-400"
+        };
+      } else if (file.processingMode === 'all') {
+        return {
+          icon: <Sparkles className="w-3 h-3 text-amber-400" />,
+          text: `${width}×${height}`,
+          className: "bg-amber-500/10 text-amber-400"
         };
       }
     }
@@ -112,7 +156,7 @@ export function ImagePreview({
               </button>
               <button
                 type="button"
-                onClick={() => onRemove(file.id)}
+                onClick={handleRemove}
                 className="btn-icon text-red-500 hover:bg-red-500/10"
                 title="Supprimer"
               >

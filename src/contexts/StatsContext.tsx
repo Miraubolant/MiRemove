@@ -13,7 +13,7 @@ interface SessionStats {
 
 interface StatsContextType {
   stats: SessionStats;
-  addProcessingResult: (success: boolean, processingTime: number) => void;
+  addProcessingResult: (success: boolean, processingTime: number, operation?: string) => void;
   resetStats: () => void;
 }
 
@@ -98,7 +98,7 @@ export function StatsProvider({ children }: { children: React.ReactNode }) {
     loadUserStats();
   }, [user]);
 
-  const addProcessingResult = useCallback(async (success: boolean, processingTime: number) => {
+  const addProcessingResult = useCallback(async (success: boolean, processingTime: number, operation: string = 'ai') => {
     setStats(currentStats => {
       const newStats = {
         processedImages: currentStats.processedImages + 1,
@@ -119,50 +119,15 @@ export function StatsProvider({ children }: { children: React.ReactNode }) {
     // Si l'utilisateur est connecté, mettre à jour les stats dans Supabase
     if (user) {
       try {
-        const { data: currentStats, error: fetchError } = await supabase
-          .from('user_stats')
-          .select('*')
-          .eq('user_id', user.id)
-          .maybeSingle();
+        const { error } = await supabase.rpc('update_operation_stats', {
+          p_user_id: user.id,
+          p_operation: operation,
+          p_success: success,
+          p_processing_time: processingTime
+        });
 
-        if (fetchError) {
-          console.error('Error fetching current stats:', fetchError);
-          return;
-        }
-
-        if (!currentStats) {
-          // Créer de nouvelles stats si elles n'existent pas
-          const { error: insertError } = await supabase
-            .from('user_stats')
-            .insert([{
-              user_id: user.id,
-              processed_images: 1,
-              success_count: success ? 1 : 0,
-              failure_count: success ? 0 : 1,
-              total_processing_time: processingTime,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            }]);
-
-          if (insertError) {
-            console.error('Error creating user stats:', insertError);
-          }
-        } else {
-          // Mettre à jour les stats existantes
-          const { error: updateError } = await supabase
-            .from('user_stats')
-            .update({
-              processed_images: currentStats.processed_images + 1,
-              success_count: currentStats.success_count + (success ? 1 : 0),
-              failure_count: currentStats.failure_count + (success ? 0 : 1),
-              total_processing_time: currentStats.total_processing_time + processingTime,
-              updated_at: new Date().toISOString()
-            })
-            .eq('user_id', user.id);
-
-          if (updateError) {
-            console.error('Error updating user stats:', updateError);
-          }
+        if (error) {
+          console.error('Error updating operation stats:', error);
         }
       } catch (error) {
         console.error('Error in addProcessingResult:', error);
@@ -196,9 +161,9 @@ export function StatsProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   useEffect(() => {
-    const handleImageProcessed = (event: CustomEvent<{ success: boolean; processingTime: number }>) => {
-      const { success, processingTime } = event.detail;
-      addProcessingResult(success, processingTime);
+    const handleImageProcessed = (event: CustomEvent<{ success: boolean; processingTime: number; operation?: string }>) => {
+      const { success, processingTime, operation } = event.detail;
+      addProcessingResult(success, processingTime, operation);
     };
 
     window.addEventListener('imageProcessed', handleImageProcessed as EventListener);

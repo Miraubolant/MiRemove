@@ -282,7 +282,8 @@ export async function removeBackground(
     window.dispatchEvent(new CustomEvent('imageProcessed', {
       detail: {
         success,
-        processingTime
+        processingTime,
+        operation: dimensions?.mode || 'ai'
       }
     }));
   }

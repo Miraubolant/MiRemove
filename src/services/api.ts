@@ -56,9 +56,6 @@ class RequestQueue {
   }
 }
 
-// Initialize request queue
-const requestQueue = new RequestQueue(3);
-
 // Convert Blob to JPG format
 async function convertToJPG(blob: Blob, originalName: string): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -145,45 +142,16 @@ async function fetchWithRetry(
   throw new Error('Maximum retries exceeded');
 }
 
-// Function to process image with various operations
-async function processImage(file: File, options: {
-  remove_bg?: boolean;
-  resize?: boolean;
-  width?: number;
-  height?: number;
-  mode?: string;
-  keep_ratio?: boolean;
-  crop_mouth?: boolean;
-}): Promise<Blob> {
-  const formData = new FormData();
-  formData.append('image', file);
-
-  // Add options to query params
-  const queryParams = new URLSearchParams();
-  for (const [key, value] of Object.entries(options)) {
-    if (value !== undefined) {
-      queryParams.append(key, value.toString());
-    }
-  }
-
-  const response = await fetchWithRetry(
-    `${API_BASE_URL}/process?${queryParams.toString()}`,
-    {
-      method: 'POST',
-      body: formData
-    }
-  );
-
-  return response.blob();
-}
+// Initialize request queue
+const requestQueue = new RequestQueue(3);
 
 // Function to remove background
-async function removeBackgroundOnly(file: File, model: string = 'bria'): Promise<Blob> {
+async function removeBackgroundOnly(file: File | Blob): Promise<Blob> {
   const formData = new FormData();
   formData.append('image', file);
 
   const response = await fetchWithRetry(
-    `${API_BASE_URL}/remove-background?model=${model}`,
+    `${API_BASE_URL}/remove-background`,
     {
       method: 'POST',
       body: formData
@@ -193,31 +161,33 @@ async function removeBackgroundOnly(file: File, model: string = 'bria'): Promise
   return response.blob();
 }
 
-// Function to resize image
-async function resizeImage(file: File | Blob, dimensions: { width: number; height: number; tool?: string }, originalName: string): Promise<Blob> {
+// Process image with multiple treatments
+async function processImage(
+  file: File | Blob,
+  options: {
+    remove_bg?: boolean;
+    crop_mouth?: boolean;
+    resize?: boolean;
+    width?: number;
+    height?: number;
+    mode?: string;
+    keep_ratio?: boolean;
+  }
+): Promise<Blob> {
   const formData = new FormData();
-  
-  // If it's a Blob from background removal, convert to JPG first
-  const imageToUpload = file instanceof File ? file : await convertToJPG(file, originalName);
-  
-  // Use original filename but change extension to .jpg if it's a blob
-  const fileName = file instanceof File 
-    ? originalName 
-    : originalName.substring(0, originalName.lastIndexOf('.')) + '.jpg';
-  
-  formData.append('image', imageToUpload, fileName);
+  formData.append('image', file);
 
-  const queryParams = new URLSearchParams({
-    width: dimensions.width.toString(),
-    height: dimensions.height.toString(),
-    mode: 'fit',
-    keep_ratio: 'true',
-    resampling: 'lanczos',
-    ...(dimensions.tool && { tool: dimensions.tool })
+  const queryParams = new URLSearchParams();
+  
+  // Add all options to query params
+  Object.entries(options).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      queryParams.append(key, value.toString());
+    }
   });
 
   const response = await fetchWithRetry(
-    `${API_BASE_URL}/resize?${queryParams.toString()}`,
+    `${API_BASE_URL}/process-image?${queryParams.toString()}`,
     {
       method: 'POST',
       body: formData
@@ -235,7 +205,6 @@ export async function removeBackground(
   const startTime = performance.now();
   let success = false;
   let shouldTrackStats = true;
-  let operationType = dimensions?.mode || 'ai';
 
   try {
     let resultBlob: Blob;
@@ -310,13 +279,10 @@ export async function removeBackground(
     throw new Error(error.message || 'Failed to process image');
   } finally {
     const processingTime = (performance.now() - startTime) / 1000;
-    
-    // Dispatch event with operation type
     window.dispatchEvent(new CustomEvent('imageProcessed', {
       detail: {
         success,
-        processingTime,
-        operationType
+        processingTime
       }
     }));
   }

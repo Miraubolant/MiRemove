@@ -2,9 +2,7 @@ import React, { useState } from 'react';
 import { 
   X, Upload, Wand2, Download, Info, ZoomIn, ZoomOut, 
   RotateCcw, SplitSquareVertical, Copy, Maximize2, Timer,
-  Image, Trash2, LogIn, Settings2, ChevronLeft, ChevronRight,
-  Layers, Scissors, Sparkles, Shield, Eye, Activity, Users,
-  Lock, Crown, Star, Check, AlertTriangle, Lightbulb, Gauge
+  Image, Trash2, LogIn, Settings2, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 interface QuickGuideModalProps {
@@ -28,19 +26,30 @@ export function QuickGuideModal({ onClose }: QuickGuideModalProps) {
       ]
     },
     {
-      title: "Modes de traitement",
-      icon: Layers,
-      description: "Différentes options de traitement",
+      title: "Traitement IA",
+      icon: Wand2,
+      description: "Suppression intelligente de l'arrière-plan",
+      steps: [
+        "Détection précise des contours",
+        "Préservation des détails",
+        "Traitement par lots possible",
+        "Qualité optimale garantie"
+      ]
+    },
+    {
+      title: "Redimensionnement",
+      icon: Maximize2,
+      description: "Options de redimensionnement avancées",
       steps: [
         "Redimensionnement automatique",
-        "Suppression d'arrière-plan par IA",
-        "Suppression de la tête",
-        "Tous les traitements combinés"
+        "Préservation des proportions",
+        "Dimensions personnalisables",
+        "Qualité optimale préservée"
       ]
     },
     {
       title: "Prévisualisation avancée",
-      icon: Eye,
+      icon: ZoomIn,
       description: "Outils de prévisualisation complets",
       steps: [
         "Zoom avant/arrière (Ctrl + Molette)",
@@ -48,112 +57,67 @@ export function QuickGuideModal({ onClose }: QuickGuideModalProps) {
         "Comparaison avant/après",
         "Vue plein écran"
       ]
-    },
-    {
-      title: "Gestion par lots",
-      icon: Activity,
-      description: "Traitement efficace de plusieurs images",
-      steps: [
-        "Sélection multiple d'images",
-        "Traitement par lots automatique",
-        "File d'attente intelligente",
-        "Statistiques en temps réel"
-      ]
     }
   ];
 
   const tools = [
     {
-      icon: Maximize2,
-      name: "Redimensionnement",
-      description: "Ajuster la taille des images",
-      color: "text-blue-400",
-      bgColor: "bg-blue-500/10"
+      icon: ZoomIn,
+      name: "Zoom avant",
+      description: "Agrandir l'image"
     },
     {
-      icon: Wand2,
-      name: "Traitement IA",
-      description: "Supprimer l'arrière-plan",
-      color: "text-purple-400",
-      bgColor: "bg-purple-500/10"
+      icon: ZoomOut,
+      name: "Zoom arrière",
+      description: "Réduire l'image"
     },
     {
-      icon: Scissors,
-      name: "Suppression tête",
-      description: "Recadrer sous le menton",
-      color: "text-red-400",
-      bgColor: "bg-red-500/10"
+      icon: RotateCcw,
+      name: "Réinitialiser",
+      description: "Rétablir la vue initiale"
     },
     {
-      icon: Sparkles,
-      name: "Tous les traitements",
-      description: "Appliquer tous les traitements",
-      color: "text-amber-400",
-      bgColor: "bg-amber-500/10"
+      icon: SplitSquareVertical,
+      name: "Comparaison",
+      description: "Comparer avant/après"
     },
     {
-      icon: Eye,
-      name: "Prévisualisation",
-      description: "Comparer avant/après",
-      color: "text-emerald-400",
-      bgColor: "bg-emerald-500/10"
+      icon: Copy,
+      name: "Copier",
+      description: "Copier l'image"
     },
     {
       icon: Download,
-      name: "Exportation",
-      description: "Télécharger en JPG/PNG",
-      color: "text-blue-400",
-      bgColor: "bg-blue-500/10"
+      name: "Télécharger",
+      description: "Télécharger l'image"
     },
     {
       icon: Timer,
-      name: "File d'attente",
-      description: "Traitement par lots",
-      color: "text-purple-400",
-      bgColor: "bg-purple-500/10"
+      name: "Traitement par lots",
+      description: "Traiter plusieurs images"
     },
     {
-      icon: Activity,
-      name: "Statistiques",
-      description: "Suivi des performances",
-      color: "text-emerald-400",
-      bgColor: "bg-emerald-500/10"
+      icon: Trash2,
+      name: "Supprimer",
+      description: "Supprimer les images"
     }
   ];
 
   const tips = [
     {
-      icon: Lightbulb,
-      title: "Optimisation des images",
-      description: "Pour de meilleurs résultats",
-      advice: [
-        "Utilisez des images de bonne qualité",
-        "Évitez les images floues ou pixelisées",
-        "Préférez un éclairage uniforme",
-        "Assurez un bon contraste avec l'arrière-plan"
-      ]
+      icon: LogIn,
+      title: "Compte utilisateur",
+      description: "Connectez-vous pour profiter de plus d'images et de fonctionnalités"
     },
     {
-      icon: Gauge,
-      title: "Performance",
-      description: "Conseils pour un traitement efficace",
-      advice: [
-        "Traitez les images par lots",
-        "Utilisez le mode approprié",
-        "Redimensionnez avant l'IA si possible",
-        "Surveillez vos statistiques"
-      ]
+      icon: Settings2,
+      title: "Paramètres",
+      description: "Personnalisez les options de traitement selon vos besoins"
     },
     {
-      icon: Shield,
-      title: "Bonnes pratiques",
-      description: "Pour une utilisation optimale",
-      advice: [
-        "Sauvegardez vos images originales",
-        "Vérifiez les résultats avant export",
-        "Utilisez les prévisualisations",
-        "Gérez bien votre quota d'images"
-      ]
+      icon: Image,
+      title: "Formats supportés",
+      description: "JPG, PNG et WEBP sont pris en charge"
     }
   ];
 
@@ -222,8 +186,8 @@ export function QuickGuideModal({ onClose }: QuickGuideModalProps) {
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <div className="flex flex-col items-center text-center gap-4">
-                    <div className={`${tool.bgColor} p-3 rounded-full group-hover:scale-110 transition-all duration-300`}>
-                      <tool.icon className={`w-5 h-5 ${tool.color}`} />
+                    <div className="bg-emerald-500/20 p-3 rounded-full group-hover:bg-emerald-500/30 transition-all duration-300 transform group-hover:scale-110">
+                      <tool.icon className="w-5 h-5 text-emerald-400 group-hover:text-emerald-300" />
                     </div>
                     <div>
                       <p className="font-medium text-gray-200 group-hover:text-white mb-1">{tool.name}</p>
@@ -237,33 +201,22 @@ export function QuickGuideModal({ onClose }: QuickGuideModalProps) {
         );
       case 2:
         return (
-          <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 transition-all duration-500 ${animationDirection === 'next' ? 'translate-x-full opacity-0' : animationDirection === 'prev' ? '-translate-x-full opacity-0' : 'translate-x-0 opacity-100'}`}>
+          <div className={`space-y-5 transition-all duration-500 ${animationDirection === 'next' ? 'translate-x-full opacity-0' : animationDirection === 'prev' ? '-translate-x-full opacity-0' : 'translate-x-0 opacity-100'}`}>
             {tips.map((tip, index) => (
               <div 
                 key={index}
-                className="bg-slate-900 rounded-xl p-6 border border-gray-700/30 hover:border-emerald-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10 group"
+                className="bg-slate-900 rounded-xl p-5 border border-gray-700/30 hover:border-emerald-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10 group"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="bg-emerald-500/20 p-3 rounded-lg group-hover:bg-emerald-500/30 transition-all duration-300">
-                    <tip.icon className="w-5 h-5 text-emerald-400" />
+                <div className="flex items-center gap-4">
+                  <div className="bg-emerald-500/20 p-3 rounded-lg group-hover:bg-emerald-500/30 transition-all duration-300 transform group-hover:scale-110">
+                    <tip.icon className="w-5 h-5 text-emerald-400 group-hover:text-emerald-300" />
                   </div>
                   <div>
-                    <h3 className="font-medium text-gray-200 group-hover:text-white">{tip.title}</h3>
-                    <p className="text-sm text-gray-400">{tip.description}</p>
+                    <p className="font-medium text-gray-200 group-hover:text-white">{tip.title}</p>
+                    <p className="text-sm text-gray-400 group-hover:text-gray-300">{tip.description}</p>
                   </div>
                 </div>
-                <ul className="space-y-3 mt-4">
-                  {tip.advice.map((item, itemIndex) => (
-                    <li 
-                      key={itemIndex}
-                      className="flex items-center gap-2 text-sm text-gray-400 group-hover:text-gray-300"
-                    >
-                      <Check className="w-4 h-4 text-emerald-500" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
               </div>
             ))}
           </div>

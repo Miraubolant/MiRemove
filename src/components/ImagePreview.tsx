@@ -75,7 +75,7 @@ export function ImagePreview({
 
   // Determine if we should show white background
   const shouldShowWhiteBackground = file.status === 'completed' && 
-    (file.processingMode === 'ai' || file.processingMode === 'both');
+    (outputDimensions?.mode === 'all' || file.processingMode === 'all');
 
   // Get dimensions badge text and icon
   const getDimensionsBadge = () => {

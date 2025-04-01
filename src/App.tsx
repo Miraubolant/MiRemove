@@ -267,7 +267,7 @@ function MainApp() {
     setSelectedFiles(prev => prev.filter(f => f.id !== id));
   };
 
-  const handleApplyResize = (dimensions: { width: number; height: number; tool: string; mode: 'resize' | 'ai' | 'both' } | null) => {
+  const handleApplyResize = (dimensions: { width: number; height: number; tool: string; mode: 'resize' | 'ai' | 'both' | 'crop-head' | 'all' } | null) => {
     setOutputDimensions(dimensions);
   };
 

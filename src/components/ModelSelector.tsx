@@ -76,6 +76,11 @@ export function ModelSelector({
     onDeleteAll?.();
   };
 
+  const handleDownload = () => {
+    if (!hasCompletedFiles) return;
+    onDownloadAllJpg?.();
+  };
+
   // Cleanup timeout on unmount
   React.useEffect(() => {
     return () => {
@@ -194,7 +199,7 @@ export function ModelSelector({
 
           <button
             type="button"
-            onClick={onDownloadAllJpg}
+            onClick={handleDownload}
             disabled={!hasCompletedFiles}
             className={`h-[48px] w-[48px] flex items-center justify-center rounded-xl shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 ${
               hasCompletedFiles 

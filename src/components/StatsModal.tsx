@@ -126,9 +126,16 @@ export function StatsModal({ onClose, stats }: StatsModalProps) {
 
           if (statsError) throw statsError;
 
+          // Calculate total processed images
+          const totalProcessed = (operationStats.resize?.count || 0) +
+                               (operationStats.ai?.count || 0) +
+                               (operationStats.crop_head?.count || 0) +
+                               (operationStats.all?.count || 0);
+
           setGroupStats({
             ...groupData.groups,
-            ...operationStats
+            ...operationStats,
+            total_processed: totalProcessed
           });
         }
       } catch (err) {

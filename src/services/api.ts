@@ -147,8 +147,11 @@ const requestQueue = new RequestQueue(3);
 
 // Function to remove background
 async function removeBackgroundOnly(file: File | Blob): Promise<Blob> {
+  // Create a new File object if we received a Blob
+  const imageFile = file instanceof File ? file : new File([file], 'image.jpg', { type: 'image/jpeg' });
+  
   const formData = new FormData();
-  formData.append('image', file);
+  formData.append('image', imageFile);
 
   const response = await fetchWithRetry(
     `${API_BASE_URL}/remove-background`,
@@ -174,8 +177,11 @@ async function processImage(
     keep_ratio?: boolean;
   }
 ): Promise<Blob> {
+  // Create a new File object if we received a Blob
+  const imageFile = file instanceof File ? file : new File([file], 'image.jpg', { type: 'image/jpeg' });
+  
   const formData = new FormData();
-  formData.append('image', file);
+  formData.append('image', imageFile);
 
   const queryParams = new URLSearchParams();
   

@@ -15,8 +15,7 @@ export function Footer() {
           <div className="space-y-8">
             <div className="flex items-center gap-4 group">
               <div className="relative transform group-hover:scale-110 transition-transform duration-500">
-                {/* Effet de lueur derrière le logo */}
-                <div className="absolute inset-0 bg-emerald-500/30 rounded-2xl blur-2xl transition-all duration-500"></div>
+                {/* Effet de lueur supprimé */}
                 
                 {/* Conteneur du logo avec effets */}
                 <div className="relative bg-gradient-to-br from-emerald-600 to-emerald-500 p-3.5 sm:p-4 rounded-2xl shadow-lg shadow-emerald-500/20 overflow-hidden">
@@ -99,24 +98,42 @@ export function Footer() {
         </div>
         
         {/* Section du bas */}
-        <div className="py-6 border-t border-slate-800/50">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-5">
-            <div className="flex items-center gap-2 text-sm text-gray-300">
-              <span>Créé avec</span>
-              <Heart className="w-4 h-4 text-red-500 animate-pulse" />
-              <span>par</span>
-              <span className="text-emerald-500 font-semibold">Miraubolant</span>
+        <div className="py-8 border-t border-slate-800/50">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="bg-slate-800/70 px-5 py-3 rounded-2xl border border-slate-700/40 shadow-lg hover:border-emerald-500/30 transition-all duration-300 transform hover:scale-[1.02]">
+              <div className="flex items-center gap-3">
+                <div className="bg-gradient-to-br from-emerald-600 to-emerald-500 p-2 rounded-xl shadow-md shadow-emerald-500/20">
+                  <Wand2 className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-sm text-gray-300">Créé avec passion par</span>
+                <span className="bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent font-bold">Miraubolant</span>
+                <span className="flex space-x-1">
+                  <Heart className="w-4 h-4 text-red-500 animate-pulse" />
+                </span>
+              </div>
             </div>
             
-            <div className="flex items-center gap-6 text-sm font-medium">
-              <Link to="/privacy" className="text-gray-400 hover:text-emerald-500 transition-colors">
-                Confidentialité
+            <div className="flex items-center gap-4 text-sm font-medium">
+              <Link to="/privacy" className="px-3 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-slate-800/80 transition-all duration-300 flex items-center gap-2">
+                <Shield className="w-4 h-4 text-emerald-500" />
+                <span>Confidentialité</span>
               </Link>
-              <Link to="/terms" className="text-gray-400 hover:text-emerald-500 transition-colors">
-                Conditions
+              <Link to="/terms" className="px-3 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-slate-800/80 transition-all duration-300 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-emerald-500">
+                  <path d="M10 21h-2a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2" />
+                  <path d="M14 21v-5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v5" />
+                  <path d="M9 9V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4" />
+                </svg>
+                <span>Conditions</span>
               </Link>
-              <Link to="/gdpr" className="text-gray-400 hover:text-emerald-500 transition-colors">
-                RGPD
+              <Link to="/gdpr" className="px-3 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-slate-800/80 transition-all duration-300 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-emerald-500">
+                  <rect width="18" height="18" x="3" y="3" rx="2" />
+                  <path d="M8 7h8" />
+                  <path d="M8 12h8" />
+                  <path d="M8 17h5" />
+                </svg>
+                <span>RGPD</span>
               </Link>
             </div>
           </div>

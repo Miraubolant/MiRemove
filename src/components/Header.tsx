@@ -68,11 +68,7 @@ export function Header({ onShowGuide }: HeaderProps) {
             {/* Logo et titre */}
             <div className="flex items-center gap-4 group">
               <div className="relative transform group-hover:scale-110 transition-transform duration-500">
-                <div 
-                  className={`absolute inset-0 bg-emerald-500/30 rounded-2xl blur-2xl transition-all duration-500 ${
-                    isAtTop && hasScrolled ? 'opacity-100 scale-125' : 'opacity-0 scale-100'
-                  }`}
-                />
+                {/* Removed the radiant div */}
                 
                 <div className="relative bg-gradient-to-br from-emerald-600 to-emerald-500 p-3 sm:p-4 rounded-2xl shadow-lg shadow-emerald-500/20 overflow-hidden">
                   <Wand2 

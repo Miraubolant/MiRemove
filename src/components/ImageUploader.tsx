@@ -77,7 +77,7 @@ export function ImageUploader({ isDragging, onDragOver, onDragLeave, onDrop, onF
         
         <div className="flex items-center gap-3 text-gray-300 mb-6 bg-slate-800 px-4 py-2 rounded-full">
           <FileType className="w-4 h-4 text-emerald-500" />
-          <span className="text-sm">Formats supportés: JPG, PNG, WEBP</span>
+          <span className="text-sm">Formats supportés: JPG</span>
         </div>
         
         <button

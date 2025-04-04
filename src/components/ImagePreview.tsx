@@ -73,10 +73,6 @@ export function ImagePreview({
     onRemove(file.id);
   };
 
-  // Determine if we should show white background
-  const shouldShowWhiteBackground = file.status === 'completed' && 
-    (outputDimensions?.mode === 'all' || file.processingMode === 'all');
-
   // Get dimensions badge text and icon
   const getDimensionsBadge = () => {
     if (!file.dimensions) return null;
@@ -194,9 +190,6 @@ export function ImagePreview({
           <div 
             className="w-full h-[300px] bg-slate-800/50 rounded-xl overflow-hidden shadow-md cursor-pointer relative group"
             onClick={() => setShowModal(true)}
-            style={{ 
-              backgroundColor: shouldShowWhiteBackground ? '#FFFFFF' : undefined 
-            }}
           >
             {file.status === 'completed' && (
               <>
@@ -228,10 +221,10 @@ export function ImagePreview({
                 </p>
                 <button
                   onClick={(e) => handleProcess(e)}
-                  className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-medium px-4 py-2 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2 hover:scale-105"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-2 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2 hover:scale-105 active:scale-95"
                 >
                   <Play className="w-4 h-4" />
-                  Traiter maintenant
+                  <span>Traiter maintenant</span>
                 </button>
               </div>
             )}

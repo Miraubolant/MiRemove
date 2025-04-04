@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Upload, Image as ImageIcon } from 'lucide-react';
+import { Upload, Image as ImageIcon, FileType, ArrowRight } from 'lucide-react';
 
 interface ImageUploaderProps {
   isDragging: boolean;
@@ -33,64 +33,61 @@ export function ImageUploader({ isDragging, onDragOver, onDragLeave, onDrop, onF
 
   return (
     <div 
-      className="dropzone group"
+      className={`dropzone group relative rounded-3xl border-2 border-dashed p-8 transition-all duration-500 ${
+        isDragging 
+          ? 'border-emerald-500 bg-emerald-500/10' 
+          : 'border-slate-700/50 hover:border-emerald-500/70 bg-slate-900'
+      }`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className="flex flex-col items-center">
+      {/* Overlay effect when dragging */}
+      <div className={`absolute inset-0 bg-emerald-500/5 backdrop-blur-sm rounded-3xl transition-opacity duration-300 ${
+        isDragging ? 'opacity-100' : 'opacity-0'
+      }`}></div>
+      
+      {/* Background pattern */}
+      <div className="absolute inset-0 bg-grid-slate-700/[0.05] bg-[size:20px_20px] opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
+      
+      <div className="flex flex-col items-center relative z-10">
         <div 
           className="relative cursor-pointer transform hover:scale-110 transition-all duration-500 group"
           onClick={handleClick}
         >
-          {/* Arrière-plan avec dégradé */}
-          <div className="relative bg-gradient-to-br from-emerald-500 to-emerald-600 p-4 sm:p-6 rounded-full shadow-lg mb-4 sm:mb-6 group-hover:shadow-emerald-500/25 transition-all duration-500">
-            {/* Effet de brillance */}
-            <div className="absolute inset-0 rounded-full overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"></div>
-            </div>
-            
-            {/* Icône avec effet de grossissement */}
-            <Upload className="w-8 h-8 sm:w-12 sm:h-12 text-white group-hover:scale-125 transition-all duration-500" />
-
-            {/* Effet de lueur */}
-            <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+          {/* Background with solid color instead of gradient */}
+          <div className="relative bg-emerald-600 p-5 sm:p-7 rounded-full shadow-xl shadow-emerald-500/20 mb-6 sm:mb-8 group-hover:shadow-emerald-500/30 transition-all duration-500">
+            {/* Icon with scale effect */}
+            <Upload className="w-10 h-10 sm:w-14 sm:h-14 text-white group-hover:scale-125 transition-all duration-500" />
           </div>
+          
+          {/* Rotating circular indicator */}
+          <div className={`absolute -inset-2 border-2 border-dashed border-emerald-500/40 rounded-full transition-all duration-1000 ${
+            isDragging ? 'opacity-100 animate-spin-slow' : 'opacity-0'
+          }`}></div>
         </div>
         
-        <h3 className="text-base sm:text-lg font-medium text-gray-200 mb-2 text-center px-4">
-          Glissez vos images ici
+        <h3 className="text-xl sm:text-2xl font-bold text-white mb-3 text-center px-4">
+          {isDragging ? "Déposez pour importer" : "Glissez vos images ici"}
         </h3>
         
-        <div className="flex items-center gap-2 text-gray-400 mb-4">
-          <ImageIcon className="w-4 h-4" />
-          <span className="text-xs sm:text-sm">JPG, PNG, WEBP</span>
+        <p className="text-emerald-400/90 font-medium text-base mb-4 text-center max-w-md">
+          Ou utilisez le sélecteur de fichiers pour parcourir vos images
+        </p>
+        
+        <div className="flex items-center gap-3 text-gray-300 mb-6 bg-slate-800 px-4 py-2 rounded-full">
+          <FileType className="w-4 h-4 text-emerald-500" />
+          <span className="text-sm">Formats supportés: JPG, PNG, WEBP</span>
         </div>
         
         <button
           onClick={handleClick}
-          className="relative group overflow-hidden bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-medium px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-emerald-500/25 flex items-center justify-center gap-2 sm:gap-2.5 hover:scale-105 active:scale-[0.98] w-full sm:w-auto"
+          className="relative group overflow-hidden bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 sm:px-8 py-3 sm:py-4 rounded-xl transition-all duration-300 shadow-lg shadow-emerald-600/20 hover:shadow-emerald-500/30 flex items-center justify-center gap-3 hover:scale-105 active:scale-[0.98] w-auto"
         >
-          {/* Effet de brillance */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"></div>
-          
-          {/* Particules animées */}
-          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
-            {[...Array(3)].map((_, i) => (
-              <div
-                key={i}
-                className={`absolute w-1 h-1 bg-white/30 rounded-full animate-particle-${i + 1}`}
-                style={{
-                  left: '50%',
-                  top: '50%'
-                }}
-              />
-            ))}
-          </div>
-          
-          <div className="relative flex items-center gap-2">
-            <Upload className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="text-sm sm:text-base">Parcourir les fichiers</span>
+          <div className="relative flex items-center gap-3">
+            <Upload className="w-5 h-5 sm:w-6 sm:h-6" />
+            <span className="text-base sm:text-lg">Parcourir les fichiers</span>
+            <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 -ml-2 group-hover:ml-0 transition-all duration-300" />
           </div>
         </button>
         

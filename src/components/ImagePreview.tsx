@@ -10,13 +10,15 @@ interface ImagePreviewProps {
   onRemove: (id: string) => void;
   onProcess: (file: ImageFile) => Promise<void>;
   outputDimensions?: { width: number; height: number; tool?: string; mode?: 'resize' | 'ai' | 'both' | 'crop-head' | 'all' } | null;
+  hasWhiteBackground?: boolean;
 }
 
 export function ImagePreview({ 
   file, 
   onRemove, 
   onProcess,
-  outputDimensions
+  outputDimensions,
+  hasWhiteBackground = false
 }: ImagePreviewProps) {
   const [showInfo, setShowInfo] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
@@ -190,6 +192,7 @@ export function ImagePreview({
           <div 
             className="w-full h-[300px] bg-slate-800/50 rounded-xl overflow-hidden shadow-md cursor-pointer relative group"
             onClick={() => setShowModal(true)}
+            style={{ backgroundColor: hasWhiteBackground ? '#FFFFFF' : undefined }}
           >
             {file.status === 'completed' && (
               <>
@@ -245,6 +248,7 @@ export function ImagePreview({
           originalUrl={file.status === 'completed' ? file.preview : undefined}
           onClose={() => setShowModal(false)}
           processingMode={file.processingMode}
+          hasWhiteBackground={hasWhiteBackground}
         />
       )}
 

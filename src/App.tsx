@@ -29,7 +29,7 @@ function MainApp() {
   const [isDragging, setIsDragging] = useState(false);
   const [totalProcessed, setTotalProcessed] = useState(0);
   const [processingBatch, setProcessingBatch] = useState(false);
-  const [outputDimensions, setOutputDimensions] = useState<{ width: number; height: number; tool?: string; mode?: 'resize' | 'ai' | 'both' } | null>({
+  const [outputDimensions, setOutputDimensions] = useState<{ width: number; height: number; tool?: string; mode?: 'resize' | 'ai' | 'both' | 'crop-head' | 'all' } | null>({
     width: 1000,
     height: 1500,
     tool: 'imagemagick',
@@ -40,6 +40,7 @@ function MainApp() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [isImageLimit, setIsImageLimit] = useState(false);
+  const [hasWhiteBackground, setHasWhiteBackground] = useState(false);
   const { incrementCount, canProcess, remainingProcesses, resetCount } = useUsageStore();
   const { user } = useAuthStore();
   const { settings } = useAdminSettingsStore();
@@ -271,6 +272,10 @@ function MainApp() {
     setOutputDimensions(dimensions);
   };
 
+  const handleApplyWhiteBackground = () => {
+    setHasWhiteBackground(!hasWhiteBackground);
+  };
+
   const hasPendingFiles = selectedFiles.some(f => f.status === 'pending');
   const hasCompletedFiles = selectedFiles.some(f => f.status === 'completed');
   const pendingCount = selectedFiles.filter(f => f.status === 'pending').length;
@@ -303,6 +308,8 @@ function MainApp() {
             pendingCount={pendingCount}
             onApplyResize={handleApplyResize}
             outputDimensions={outputDimensions}
+            hasWhiteBackground={hasWhiteBackground}
+            onApplyWhiteBackground={handleApplyWhiteBackground}
           />
         </div>
 
@@ -314,6 +321,7 @@ function MainApp() {
               onRemove={removeFile}
               onProcess={processImage}
               outputDimensions={outputDimensions}
+              hasWhiteBackground={hasWhiteBackground}
             />
           ))}
           {emptyFrames.map((_, index) => (

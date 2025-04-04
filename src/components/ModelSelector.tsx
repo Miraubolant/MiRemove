@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ImageIcon, Download, Clock, Trash2, Maximize2, AlertTriangle, Wand2, Layers, Scissors, Sparkles } from 'lucide-react';
+import { ImageIcon, Download, Clock, Trash2, Maximize2, AlertTriangle, Wand2, Layers, Scissors, Sparkles, PaintBucket } from 'lucide-react';
 import { AuthModal } from './AuthModal';
 import { ResizeModal } from './ResizeModal';
 import { useAuthStore } from '../stores/authStore';
@@ -33,7 +33,9 @@ export function ModelSelector({
   completed = 0,
   pendingCount = 0,
   onApplyResize,
-  outputDimensions
+  outputDimensions,
+  hasWhiteBackground = false,
+  onApplyWhiteBackground
 }: ModelSelectorProps) {
   const { user } = useAuthStore();
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -196,6 +198,19 @@ export function ModelSelector({
               </div>
             )}
           </div>
+
+          <button
+            type="button"
+            onClick={onApplyWhiteBackground}
+            className={`h-[48px] w-[48px] flex items-center justify-center rounded-xl shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 ${
+              hasWhiteBackground 
+                ? 'bg-emerald-500 text-white' 
+                : 'bg-slate-800/50 text-gray-400 hover:text-white hover:bg-slate-700/50'
+            }`}
+            title="Appliquer un fond blanc"
+          >
+            <PaintBucket className="w-5 h-5" />
+          </button>
 
           <button
             type="button"

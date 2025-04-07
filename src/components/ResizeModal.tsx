@@ -59,8 +59,11 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
       return 'crop-head' as const;
     } else if (removeBackground) {
       return hasResize ? 'both' as const : 'ai' as const;
-    } else {
+    } else if (hasResize) {
       return 'resize' as const;
+    } else {
+      // Par défaut, si aucun traitement n'est sélectionné, on utilise le traitement IA
+      return 'ai' as const;
     }
   };
 
@@ -70,17 +73,27 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
       return;
     }
 
-    // Déterminer le mode actuel
+    // Si aucun traitement n'est sélectionné, activer par défaut le traitement IA
+    let finalConfig = {...config};
+    if (!config.cropHead && !config.removeBackground && 
+        (!config.enableDimensions || !config.dimensions.width || !config.dimensions.height)) {
+      finalConfig = {
+        ...finalConfig,
+        removeBackground: true // Activer le traitement IA par défaut
+      };
+    }
+
+    // Déterminer le mode actuel avec la configuration finale
     const mode = determineMode();
     
     // Si les dimensions sont désactivées ou non spécifiées, on utilise 0
-    const width = config.enableDimensions ? (config.dimensions.width || 0) : 0;
-    const height = config.enableDimensions ? (config.dimensions.height || 0) : 0;
+    const width = finalConfig.enableDimensions ? (finalConfig.dimensions.width || 0) : 0;
+    const height = finalConfig.enableDimensions ? (finalConfig.dimensions.height || 0) : 0;
     
     onApply({
       width,
       height,
-      tool: config.tool || 'imagemagick',
+      tool: finalConfig.tool || 'imagemagick',
       mode: mode
     });
   };

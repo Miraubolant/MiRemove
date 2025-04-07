@@ -102,8 +102,8 @@ export function ModelSelector({
     };
   }, [deleteButtonTimeout]);
 
-  // Vérifier si des options de traitement sont actives
-  const hasActiveOptions = outputDimensions && outputDimensions.mode;
+  // Vérifier si des options de traitement sont actives - par défaut, le mode 'ai' est toujours considéré comme actif
+  const hasActiveOptions = outputDimensions && (outputDimensions.mode || true);
 
   // Convertir le mode en propriétés visuelles
   const hasCropHead = outputDimensions?.mode === 'crop-head' || outputDimensions?.mode === 'all';

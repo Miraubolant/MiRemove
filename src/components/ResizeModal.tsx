@@ -24,20 +24,34 @@ interface ResizeModalProps {
 
 export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProps) {
   const [config, setConfig] = useState(() => {
-    return initialConfig || {
+    // Définir enableDimensions à true par défaut, ou utiliser la valeur de initialConfig si elle existe
+    const defaultConfig = {
       enabled: true,
       dimensions: { width: 1080, height: 1080 },
       cropHead: false,
       removeBackground: false,
       tool: 'imagemagick',
-      mode: 'resize' as const
+      mode: 'resize' as const,
+      enableDimensions: true  // Activé par défaut
     };
+    
+    // Si initialConfig est fourni, on fusionne avec les valeurs par défaut
+    if (initialConfig) {
+      return {
+        ...defaultConfig,
+        ...initialConfig,
+        // S'assurer que enableDimensions est à true par défaut sauf si explicitement défini à false
+        enableDimensions: initialConfig.enableDimensions !== undefined ? initialConfig.enableDimensions : true
+      };
+    }
+    
+    return defaultConfig;
   });
 
   // Déterminer le mode en fonction des options sélectionnées
   const determineMode = () => {
-    const { cropHead, removeBackground } = config;
-    const hasResize = config.dimensions.width > 0 && config.dimensions.height > 0;
+    const { cropHead, removeBackground, enableDimensions } = config;
+    const hasResize = enableDimensions && config.dimensions.width > 0 && config.dimensions.height > 0;
     
     if (cropHead && removeBackground) {
       return 'all' as const;
@@ -59,17 +73,13 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
     // Déterminer le mode actuel
     const mode = determineMode();
     
-    // Vérifier si les dimensions sont requises pour ce mode
-    const needsDimensions = (mode === 'resize' || mode === 'both');
-    
-    // Si les dimensions sont requises mais pas fournies, on ne fait rien
-    if (needsDimensions && (!config.dimensions.width || !config.dimensions.height)) {
-      return;
-    }
+    // Si les dimensions sont désactivées ou non spécifiées, on utilise 0
+    const width = config.enableDimensions ? (config.dimensions.width || 0) : 0;
+    const height = config.enableDimensions ? (config.dimensions.height || 0) : 0;
     
     onApply({
-      width: config.dimensions.width || 0,
-      height: config.dimensions.height || 0,
+      width,
+      height,
       tool: config.tool || 'imagemagick',
       mode: mode
     });
@@ -121,51 +131,75 @@ export function ResizeModal({ onClose, onApply, initialConfig }: ResizeModalProp
               </button>
             </div>
 
-            {/* Dimensions */}
-            <div className="space-y-4 bg-slate-800/30 p-5 rounded-xl border border-slate-700/40">
-              <div className="flex items-center gap-2 pb-1 border-b border-slate-700/30">
-                <Maximize2 className="w-4 h-4 text-blue-400" />
-                <h4 className="text-sm font-medium text-white">Dimensions</h4>
-              </div>
-              <div className="grid grid-cols-2 gap-4 pt-2">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2 ml-1">
-                    Largeur
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      value={config.dimensions.width || ""}
-                      onChange={(e) => setConfig(prev => ({
-                        ...prev,
-                        dimensions: { ...prev.dimensions, width: parseInt(e.target.value) || 0 }
-                      }))}
-                      placeholder="ex: 1920"
-                      className="w-full bg-slate-800/70 border border-slate-600/50 rounded-lg px-4 py-3 text-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                    />
-                    <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-500 text-sm">px</span>
-                  </div>
+            {/* Enable/Disable Dimensions */}
+            <div className="flex items-center justify-between p-5 bg-slate-800/50 rounded-xl border border-slate-700/40 hover:border-slate-600/40 transition-all shadow-lg">
+              <div className="flex items-center gap-4">
+                <div className={`p-2.5 rounded-xl transition-all ${config.enableDimensions ? 'bg-blue-500/20' : 'bg-slate-700/50'}`}>
+                  <Maximize2 className={`w-5 h-5 ${config.enableDimensions ? 'text-blue-400' : 'text-slate-400'}`} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2 ml-1">
-                    Hauteur
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      value={config.dimensions.height || ""}
-                      onChange={(e) => setConfig(prev => ({
-                        ...prev,
-                        dimensions: { ...prev.dimensions, height: parseInt(e.target.value) || 0 }
-                      }))}
-                      placeholder="ex: 1080"
-                      className="w-full bg-slate-800/70 border border-slate-600/50 rounded-lg px-4 py-3 text-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                    />
-                    <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-500 text-sm">px</span>
-                  </div>
+                  <h4 className="font-medium text-white">Redimensionnement</h4>
+                  <p className="text-sm text-slate-400 mt-0.5">Modifier les dimensions</p>
                 </div>
               </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={config.enableDimensions}
+                  onChange={() => setConfig(prev => ({ ...prev, enableDimensions: !prev.enableDimensions }))}
+                  className="sr-only peer" 
+                />
+                <div className="w-11 h-6 bg-slate-700 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300/20 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+              </label>
             </div>
+
+            {/* Dimensions */}
+            {config.enableDimensions && (
+              <div className="space-y-4 bg-slate-800/30 p-5 rounded-xl border border-slate-700/40">
+                <div className="flex items-center gap-2 pb-1 border-b border-slate-700/30">
+                  <Maximize2 className="w-4 h-4 text-blue-400" />
+                  <h4 className="text-sm font-medium text-white">Dimensions</h4>
+                </div>
+                <div className="grid grid-cols-2 gap-4 pt-2">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2 ml-1">
+                      Largeur
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={config.dimensions.width || ""}
+                        onChange={(e) => setConfig(prev => ({
+                          ...prev,
+                          dimensions: { ...prev.dimensions, width: parseInt(e.target.value) || 0 }
+                        }))}
+                        placeholder="ex: 1920"
+                        className="w-full bg-slate-800/70 border border-slate-600/50 rounded-lg px-4 py-3 text-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      />
+                      <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-500 text-sm">px</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2 ml-1">
+                      Hauteur
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={config.dimensions.height || ""}
+                        onChange={(e) => setConfig(prev => ({
+                          ...prev,
+                          dimensions: { ...prev.dimensions, height: parseInt(e.target.value) || 0 }
+                        }))}
+                        placeholder="ex: 1080"
+                        className="w-full bg-slate-800/70 border border-slate-600/50 rounded-lg px-4 py-3 text-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      />
+                      <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-500 text-sm">px</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Options supplémentaires */}
             <div className="space-y-4 bg-slate-800/30 p-5 rounded-xl border border-slate-700/40">

@@ -187,8 +187,10 @@ export function ModelSelector({
               <ModeIcon className="w-5 h-5" />
             </button>
             
-            {/* Badge pour dimensions - uniquement si dimensions spécifiées */}
-            {hasResize && outputDimensions && (
+            {/* Badge pour dimensions - uniquement si dimensions spécifiées et mode avec resize */}
+            {outputDimensions && outputDimensions.width > 0 && outputDimensions.height > 0 && 
+             (outputDimensions.mode === 'resize' || outputDimensions.mode === 'both' || 
+              outputDimensions.mode === 'crop-head' || outputDimensions.mode === 'all') && (
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-xs font-medium px-2 py-0.5 rounded-full shadow-lg min-w-[42px] text-center">
                 {outputDimensions.width}×{outputDimensions.height}
               </div>
@@ -297,7 +299,10 @@ export function ModelSelector({
             tool: outputDimensions.tool || 'imagemagick',
             mode: outputDimensions.mode || 'resize',
             cropHead: outputDimensions.mode === 'crop-head' || outputDimensions.mode === 'all',
-            removeBackground: outputDimensions.mode === 'ai' || outputDimensions.mode === 'both' || outputDimensions.mode === 'all'
+            removeBackground: outputDimensions.mode === 'ai' || outputDimensions.mode === 'both' || outputDimensions.mode === 'all',
+            enableDimensions: outputDimensions.width > 0 && outputDimensions.height > 0 && 
+                           (outputDimensions.mode === 'resize' || outputDimensions.mode === 'both' || 
+                            outputDimensions.mode === 'crop-head' || outputDimensions.mode === 'all')
           } : undefined}
         />
       )}

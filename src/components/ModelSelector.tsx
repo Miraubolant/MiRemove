@@ -1,25 +1,35 @@
-import React, { useState } from 'react';
-import { ImageIcon, Download, Clock, Trash2, Maximize2, AlertTriangle, Wand2, Layers, Scissors, Sparkles, PaintBucket } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ImageIcon, Download, Clock, Trash2, Maximize2, AlertTriangle, Scissors, PaintBucket, Wand2, Layers, Sparkles } from 'lucide-react';
 import { AuthModal } from './AuthModal';
 import { ResizeModal } from './ResizeModal';
 import { useAuthStore } from '../stores/authStore';
 import { useAdminSettingsStore } from '../stores/adminSettingsStore';
 import { ProgressBar } from './ProgressBar';
 
+// Pour la compatibilité avec le code original
+type ProcessingMode = 'resize' | 'ai' | 'both' | 'crop-head' | 'all';
+
+interface ProcessingOptions {
+  width: number;
+  height: number;
+  tool: string;
+  mode: ProcessingMode;
+}
+
 interface ModelSelectorProps {
   onSubmit: (e: React.FormEvent) => void;
   hasPendingFiles: boolean;
   hasCompletedFiles?: boolean;
   onDownloadAllJpg?: () => void;
-  onApplyWhiteBackground?: () => void;
   onDeleteAll?: () => void;
   hasWhiteBackground?: boolean;
+  onApplyWhiteBackground?: () => void;
   isProcessing?: boolean;
   totalToProcess?: number;
   completed?: number;
   pendingCount?: number;
-  onApplyResize?: (dimensions: { width: number; height: number; tool: string; mode: 'resize' | 'ai' | 'both' | 'crop-head' | 'all' } | null) => void;
-  outputDimensions?: { width: number; height: number; tool?: string; mode?: 'resize' | 'ai' | 'both' | 'crop-head' | 'all' } | null;
+  onApplyResize?: (dimensions: { width: number; height: number; tool: string; mode: ProcessingMode } | null) => void;
+  outputDimensions?: { width: number; height: number; tool?: string; mode?: ProcessingMode } | null;
 }
 
 export function ModelSelector({ 
@@ -84,7 +94,7 @@ export function ModelSelector({
   };
 
   // Cleanup timeout on unmount
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       if (deleteButtonTimeout) {
         window.clearTimeout(deleteButtonTimeout);
@@ -92,57 +102,57 @@ export function ModelSelector({
     };
   }, [deleteButtonTimeout]);
 
-  // Déterminer si on utilise tous les traitements
-  const hasAllProcessing = outputDimensions?.mode === 'all';
-  
-  // Autres modes spécifiques, à n'afficher que si le mode 'all' n'est pas actif
-  const showDimensionsBadge = !hasAllProcessing && 
-    outputDimensions?.mode && 
-    ['resize', 'both'].includes(outputDimensions.mode);
-  
-  const showAiBadge = !hasAllProcessing && 
-    outputDimensions?.mode && 
-    ['ai', 'both'].includes(outputDimensions.mode);
+  // Vérifier si des options de traitement sont actives
+  const hasActiveOptions = outputDimensions && outputDimensions.mode;
 
-  const mode = outputDimensions?.mode || 'both';
+  // Convertir le mode en propriétés visuelles
+  const hasCropHead = outputDimensions?.mode === 'crop-head' || outputDimensions?.mode === 'all';
+  const hasRemoveBackground = outputDimensions?.mode === 'ai' || outputDimensions?.mode === 'both' || outputDimensions?.mode === 'all';
+  const hasResize = outputDimensions?.width && outputDimensions?.height && 
+                    (outputDimensions?.mode === 'resize' || outputDimensions?.mode === 'both' || outputDimensions?.mode === 'all');
 
+  // Déterminer l'icône en fonction du mode
+  const getModeIcon = () => {
+    if (!outputDimensions || !outputDimensions.mode) return ImageIcon;
+    
+    switch (outputDimensions.mode) {
+      case 'all':
+        return Sparkles;
+      case 'crop-head':
+        return Scissors;
+      case 'ai':
+        return Wand2;
+      case 'both':
+        return Layers;
+      case 'resize':
+        return Maximize2;
+      default:
+        return ImageIcon;
+    }
+  };
+
+  // Texte du bouton principal en fonction du mode
   const getButtonText = () => {
     if (!user) return "Se connecter pour traiter";
-    switch (mode) {
-      case 'resize': return "Redimensionner les images";
-      case 'ai': return "Traitement IA";
-      case 'both': return "Redimensionnement + IA";
-      case 'crop-head': return "Supprimer la tête";
-      case 'all': return "Tous les traitements";
-      default: return "Traiter les images";
-    }
-  };
-
-  // Get icon and styles based on mode
-  const getModeIcon = () => {
-    switch (mode) {
-      case 'resize': return Maximize2;
-      case 'ai': return Wand2;
-      case 'both': return Layers;
-      case 'crop-head': return Scissors;
-      case 'all': return Sparkles;
-      default: return ImageIcon;
-    }
-  };
-
-  const getBadgeColor = () => {
-    switch (mode) {
-      case 'resize': return "bg-blue-500";
-      case 'ai': return "bg-purple-500";
-      case 'both': return "bg-emerald-500";
-      case 'crop-head': return "bg-red-500";
-      case 'all': return "bg-amber-500";
-      default: return "bg-slate-500";
+    if (!outputDimensions || !outputDimensions.mode) return "Configurer le traitement";
+    
+    switch (outputDimensions.mode) {
+      case 'all':
+        return "Tous les traitements";
+      case 'crop-head':
+        return "Redimensionner + Couper tête";
+      case 'ai':
+        return "Supprimer l'arrière-plan";
+      case 'both':
+        return "Redimensionner + Suppr. fond";
+      case 'resize':
+        return "Redimensionner uniquement";
+      default:
+        return "Traiter les images";
     }
   };
 
   const ModeIcon = getModeIcon();
-  const badgeColor = getBadgeColor();
 
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -165,40 +175,27 @@ export function ModelSelector({
         )}
 
         <div className="flex gap-3">
+          {/* Bouton dimensions et paramètres */}
           <div className="relative mr-2">
             <button
               type="button"
               onClick={handleResizeClick}
               className="h-[48px] w-[48px] flex items-center justify-center rounded-xl shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600"
               title={outputDimensions ? "Modifier le traitement" : "Configurer le traitement"}
-              aria-label="Configurer le redimensionnement"
+              aria-label="Configurer le traitement"
             >
               <ModeIcon className="w-5 h-5" />
             </button>
             
-            {/* Badge jaune "Tous les traitements" - au-dessus du bouton */}
-            {hasAllProcessing && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-xs font-medium px-2 py-0.5 rounded-full shadow-lg whitespace-nowrap">
-                <Sparkles className="w-3 h-3 inline mr-0.5" />
-                Tous
-              </div>
-            )}
-            
-            {/* Badge pour dimensions - uniquement si pas le mode "all" */}
-            {showDimensionsBadge && outputDimensions && (
-              <div className={`absolute -top-3 left-1/2 -translate-x-1/2 ${badgeColor} text-white text-xs font-medium px-2 py-0.5 rounded-full shadow-lg min-w-[42px] text-center`}>
+            {/* Badge pour dimensions - uniquement si dimensions spécifiées */}
+            {hasResize && outputDimensions && (
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-xs font-medium px-2 py-0.5 rounded-full shadow-lg min-w-[42px] text-center">
                 {outputDimensions.width}×{outputDimensions.height}
-              </div>
-            )}
-            
-            {/* Badge pour l'IA - uniquement si pas le mode "all" */}
-            {showAiBadge && (
-              <div className="absolute -bottom-3 -right-2 bg-purple-500 text-white text-xs font-medium px-2 py-0.5 rounded-full shadow-lg whitespace-nowrap">
-                IA
               </div>
             )}
           </div>
 
+          {/* Bouton fond blanc */}
           <button
             type="button"
             onClick={onApplyWhiteBackground}
@@ -212,6 +209,7 @@ export function ModelSelector({
             <PaintBucket className="w-5 h-5" />
           </button>
 
+          {/* Bouton télécharger */}
           <button
             type="button"
             onClick={handleDownload}
@@ -227,6 +225,7 @@ export function ModelSelector({
             <Download className="w-5 h-5" />
           </button>
 
+          {/* Bouton supprimer */}
           <div className="relative">
             <button
               type="button"
@@ -256,12 +255,13 @@ export function ModelSelector({
             )}
           </div>
 
+          {/* Bouton principal de traitement */}
           <button
             type="submit"
             onClick={handleSubmit}
-            disabled={isProcessing || !hasPendingFiles}
+            disabled={isProcessing || !hasPendingFiles || !hasActiveOptions}
             className={`h-[48px] px-6 rounded-xl font-medium shadow-lg transition-all duration-300 flex items-center gap-3 min-w-[220px] ${
-              !isProcessing && hasPendingFiles
+              !isProcessing && hasPendingFiles && hasActiveOptions
                 ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600 hover:scale-102 active:scale-98'
                 : 'bg-slate-800/90 text-gray-500 cursor-not-allowed border border-slate-700/50'
             }`}
@@ -282,9 +282,9 @@ export function ModelSelector({
       {showResizeModal && (
         <ResizeModal
           onClose={() => setShowResizeModal(false)}
-          onApply={(dimensions) => {
+          onApply={(options) => {
             if (onApplyResize) {
-              onApplyResize(dimensions);
+              onApplyResize(options);
             }
             setShowResizeModal(false);
           }}
@@ -295,7 +295,9 @@ export function ModelSelector({
               height: outputDimensions.height
             },
             tool: outputDimensions.tool || 'imagemagick',
-            mode: outputDimensions.mode || 'both'
+            mode: outputDimensions.mode || 'resize',
+            cropHead: outputDimensions.mode === 'crop-head' || outputDimensions.mode === 'all',
+            removeBackground: outputDimensions.mode === 'ai' || outputDimensions.mode === 'both' || outputDimensions.mode === 'all'
           } : undefined}
         />
       )}

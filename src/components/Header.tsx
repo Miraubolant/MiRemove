@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wand2, BarChart3, LogIn, MailQuestion as QuestionMark, Shield } from 'lucide-react';
+import { Wand2, BarChart3, LogIn, MailQuestion as QuestionMark, Shield, Download } from 'lucide-react';
 import { StatsModal } from './StatsModal';
 import { AuthModal } from './AuthModal';
 import { AdminSettingsModal } from './admin/AdminSettingsModal';
@@ -12,10 +12,92 @@ interface HeaderProps {
   onShowGuide: () => void;
 }
 
+interface DownloadModalProps {
+  onClose: () => void;
+}
+
+function DownloadModal({ onClose }: DownloadModalProps) {
+  const handleDownload = () => {
+    const link = document.createElement('a');
+    link.href = '/MiRemover.exe';
+    link.download = 'MiRemover.exe';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="bg-slate-900/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-800/50 w-full max-w-md animate-in slide-in-from-bottom-4 duration-300">
+        <div className="p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-emerald-500/10 p-3 rounded-xl">
+                <Download className="w-6 h-6 text-emerald-500" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-200">
+                MiRemover Desktop
+              </h2>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
+            >
+              <span className="sr-only">Fermer</span>
+              ×
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-gray-300">
+              Téléchargez la version desktop de MiRemover pour profiter de toutes les fonctionnalités en local sur votre ordinateur.
+            </p>
+            
+            <div className="bg-slate-800/50 rounded-xl p-4 border border-gray-700/50">
+              <h3 className="text-sm font-medium text-gray-200 mb-2">Avantages :</h3>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                  Traitement plus rapide
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                  Même Fonction
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                  Traitement en local sauf pour l'IA
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-400 hover:text-gray-300"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={handleDownload}
+              className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Télécharger
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Header({ onShowGuide }: HeaderProps) {
   const [showStats, setShowStats] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [showAdminSettings, setShowAdminSettings] = useState(false);
+  const [showDownload, setShowDownload] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAtTop, setIsAtTop] = useState(true);
   const [hasScrolled, setHasScrolled] = useState(false);
@@ -68,8 +150,6 @@ export function Header({ onShowGuide }: HeaderProps) {
             {/* Logo et titre */}
             <div className="flex items-center gap-4 group">
               <div className="relative transform group-hover:scale-110 transition-transform duration-500">
-                {/* Removed the radiant div */}
-                
                 <div className="relative bg-gradient-to-br from-emerald-600 to-emerald-500 p-3 sm:p-4 rounded-2xl shadow-lg shadow-emerald-500/20 overflow-hidden">
                   <Wand2 
                     className={`w-6 h-6 sm:w-7 sm:h-7 text-white transform transition-all duration-500 ${
@@ -107,6 +187,16 @@ export function Header({ onShowGuide }: HeaderProps) {
             
             {/* Boutons de droite */}
             <div className="flex items-center gap-2 sm:gap-3">
+              <button
+                onClick={() => setShowDownload(true)}
+                className="bg-slate-800/70 text-gray-200 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all duration-300 hover:bg-slate-700/70 text-sm sm:text-base border border-slate-700/50 hover:border-slate-600/50 hover:shadow-lg hover:shadow-emerald-500/5"
+              >
+                <div className="flex items-center gap-2">
+                  <Download className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" />
+                  <span className="hidden sm:inline font-medium">Desktop</span>
+                </div>
+              </button>
+
               <button
                 onClick={onShowGuide}
                 className="bg-slate-800/70 text-gray-200 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all duration-300 hover:bg-slate-700/70 text-sm sm:text-base border border-slate-700/50 hover:border-slate-600/50 hover:shadow-lg hover:shadow-emerald-500/5"
@@ -173,6 +263,12 @@ export function Header({ onShowGuide }: HeaderProps) {
       {showAdminSettings && (
         <AdminSettingsModal
           onClose={() => setShowAdminSettings(false)}
+        />
+      )}
+
+      {showDownload && (
+        <DownloadModal
+          onClose={() => setShowDownload(false)}
         />
       )}
     </>

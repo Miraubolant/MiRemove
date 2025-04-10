@@ -187,16 +187,22 @@ export function Header({ onShowGuide }: HeaderProps) {
             
             {/* Boutons de droite */}
             <div className="flex items-center gap-2 sm:gap-3">
-              <button
-                onClick={() => setShowDownload(true)}
-                className="bg-slate-800/70 text-gray-200 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all duration-300 hover:bg-slate-700/70 text-sm sm:text-base border border-slate-700/50 hover:border-slate-600/50 hover:shadow-lg hover:shadow-emerald-500/5"
-              >
-                <div className="flex items-center gap-2">
-                  <Download className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" />
-                  <span className="hidden sm:inline font-medium">Desktop</span>
-                </div>
-              </button>
+              {/* Bouton Desktop visible uniquement pour les utilisateurs connectés */}
+              {user && (
+                <a
+                  href="https://github.com/Miraubolant/MiRemove/releases/download/Miremover/Miremover.exe" // Lien GitHub
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-slate-800/70 text-gray-200 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all duration-300 hover:bg-slate-700/70 text-sm sm:text-base border border-slate-700/50 hover:border-slate-600/50 hover:shadow-lg hover:shadow-emerald-500/5"
+                >
+                  <div className="flex items-center gap-2">
+                    <Download className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" />
+                    <span className="hidden sm:inline font-medium">Desktop</span>
+                  </div>
+                </a>
+              )}
 
+              {/* Autres boutons */}
               <button
                 onClick={onShowGuide}
                 className="bg-slate-800/70 text-gray-200 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all duration-300 hover:bg-slate-700/70 text-sm sm:text-base border border-slate-700/50 hover:border-slate-600/50 hover:shadow-lg hover:shadow-emerald-500/5"
@@ -206,7 +212,7 @@ export function Header({ onShowGuide }: HeaderProps) {
                   <span className="hidden sm:inline font-medium">Guide</span>
                 </div>
               </button>
-              
+
               <button
                 onClick={() => setShowStats(true)}
                 className="bg-slate-800/70 text-gray-200 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all duration-300 hover:bg-slate-700/70 text-sm sm:text-base border border-slate-700/50 hover:border-slate-600/50 hover:shadow-lg hover:shadow-emerald-500/5"
@@ -216,7 +222,7 @@ export function Header({ onShowGuide }: HeaderProps) {
                   <span className="hidden sm:inline font-medium">Statistiques</span>
                 </div>
               </button>
-              
+
               {user && isAdmin && (
                 <button
                   onClick={() => setShowAdminSettings(true)}
@@ -228,7 +234,7 @@ export function Header({ onShowGuide }: HeaderProps) {
                   </div>
                 </button>
               )}
-              
+
               {user ? (
                 <UserMenu />
               ) : (

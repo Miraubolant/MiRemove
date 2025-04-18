@@ -174,7 +174,7 @@ export function ModelSelector({
           </div>
         )}
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           {/* Bouton dimensions et paramètres */}
           <div className="relative mr-2">
             <button
@@ -262,16 +262,16 @@ export function ModelSelector({
             type="submit"
             onClick={handleSubmit}
             disabled={isProcessing || !hasPendingFiles || !hasActiveOptions}
-            className={`h-[48px] px-6 rounded-xl font-medium shadow-lg transition-all duration-300 flex items-center gap-3 min-w-[220px] ${
+            className={`h-[48px] px-4 sm:px-6 rounded-xl font-medium shadow-lg transition-all duration-300 flex items-center gap-2 sm:gap-3 w-full sm:w-auto ${
               !isProcessing && hasPendingFiles && hasActiveOptions
                 ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-700 hover:to-emerald-600 hover:scale-102 active:scale-98'
                 : 'bg-slate-800/90 text-gray-500 cursor-not-allowed border border-slate-700/50'
             }`}
             aria-label={getButtonText()}
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center gap-2 sm:gap-3 w-full">
               <ModeIcon className="w-5 h-5" />
-              <span className="font-medium">{getButtonText()}</span>
+              <span className="font-medium text-sm sm:text-base">{getButtonText()}</span>
             </div>
           </button>
         </div>

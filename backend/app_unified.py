@@ -602,6 +602,21 @@ def request_entity_too_large(error):
     }), 413
 
 
+# Add explicit favicon route BEFORE the catch-all route
+@app.route('/favicon.ico')
+def favicon():
+    """Serve favicon explicitly"""
+    import os
+    static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'dist')
+    favicon_path = os.path.join(static_dir, 'favicon.ico')
+    
+    if os.path.exists(favicon_path):
+        return send_from_directory(static_dir, 'favicon.ico', mimetype='image/x-icon')
+    
+    # Return empty favicon if not found
+    return '', 204
+
+
 # Serve static files from React build - MUST be last route
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
@@ -614,14 +629,6 @@ def serve_react_app(path):
         return jsonify({'error': 'Not found'}), 404
     
     static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'dist')
-    
-    # Special handling for favicon
-    if path == 'favicon.ico':
-        favicon_path = os.path.join(static_dir, 'favicon.ico')
-        if os.path.exists(favicon_path):
-            return send_from_directory(static_dir, 'favicon.ico', mimetype='image/x-icon')
-        else:
-            return '', 204  # No content instead of 404 for favicon
     
     # Serve static files (assets, images, etc.)
     if path and os.path.exists(os.path.join(static_dir, path)):

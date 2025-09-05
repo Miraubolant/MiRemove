@@ -407,6 +407,7 @@ def get_processor():
 
 
 @app.route('/process', methods=['POST'])
+@app.route('/api/process', methods=['POST'])
 def process_endpoint():
     """Endpoint unique pour tous les modes de traitement"""
     try:

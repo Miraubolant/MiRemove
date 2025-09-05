@@ -1,6 +1,6 @@
 [phases.setup]
-nixPkgs = ["nodejs", "python311", "python311Packages.pip", "python311Packages.setuptools", "gcc"]
-aptPkgs = ["python3-pip", "python3-venv"]
+nixPkgs = ["nodejs", "python311", "python311Packages.pip", "python311Packages.setuptools", "gcc", "stdenv.cc.cc.lib"]
+aptPkgs = ["python3-pip", "python3-venv", "libglib2.0-0", "libsm6", "libxext6", "libxrender-dev", "libgomp1", "libglu1-mesa", "libgl1-mesa-glx", "libstdc++6"]
 
 [phases.install]
 cmds = [
@@ -12,7 +12,7 @@ cmds = [
 cmds = ["npm run build"]
 
 [start]
-cmd = "bash start.sh"
+cmd = "(cd backend && python3 -m gunicorn -b 0.0.0.0:5000 app_unified:app) & npm run preview"
 
 [variables]
 NODE_ENV = "production"

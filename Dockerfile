@@ -36,11 +36,19 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy built frontend from previous stage
 COPY --from=frontend-builder /app/dist ./dist
 
-# Create a simple startup script
-RUN echo '#!/bin/sh\ncd /app/backend && gunicorn -w 4 -b 0.0.0.0:$PORT app_unified:app' > /app/start.sh && \
+# Set environment variables
+ENV PORT=8000
+ENV PYTHONUNBUFFERED=1
+ENV FLASK_APP=backend/app_unified.py
+
+# Create a robust startup script
+RUN echo '#!/bin/sh' > /app/start.sh && \
+    echo 'set -e' >> /app/start.sh && \
+    echo 'echo "Starting MiRemover backend on port ${PORT:-8000}"' >> /app/start.sh && \
+    echo 'cd /app/backend' >> /app/start.sh && \
+    echo 'exec gunicorn --config gunicorn.conf.py app_unified:app' >> /app/start.sh && \
     chmod +x /app/start.sh
 
 EXPOSE 8000
-ENV PORT=8000
 
 CMD ["/app/start.sh"]

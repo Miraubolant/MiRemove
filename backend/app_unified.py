@@ -10,7 +10,7 @@ from typing import Dict, Any, Optional, Tuple
 from datetime import datetime, timedelta
 from io import BytesIO
 
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, send_from_directory
 from flask_cors import CORS
 from PIL import Image
 import numpy as np
@@ -600,6 +600,39 @@ def request_entity_too_large(error):
     return jsonify({
         'error': f'File too large. Maximum size: {max_size}MB'
     }), 413
+
+
+# Serve static files from React build - MUST be last route
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_react_app(path):
+    """Serve React app for all non-API routes"""
+    import os
+    
+    # Skip API routes
+    if path.startswith('process') or path.startswith('health') or path.startswith('admin') or path.startswith('test'):
+        return jsonify({'error': 'Not found'}), 404
+    
+    static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'dist')
+    
+    # Special handling for favicon
+    if path == 'favicon.ico':
+        favicon_path = os.path.join(static_dir, 'favicon.ico')
+        if os.path.exists(favicon_path):
+            return send_from_directory(static_dir, 'favicon.ico', mimetype='image/x-icon')
+        else:
+            return '', 204  # No content instead of 404 for favicon
+    
+    # Serve static files (assets, images, etc.)
+    if path and os.path.exists(os.path.join(static_dir, path)):
+        return send_from_directory(static_dir, path)
+    
+    # Serve index.html for all other routes (React routing)
+    index_path = os.path.join(static_dir, 'index.html')
+    if os.path.exists(index_path):
+        return send_from_directory(static_dir, 'index.html')
+    
+    return jsonify({'error': 'Frontend not built'}), 404
 
 
 @app.errorhandler(500)

@@ -28,8 +28,7 @@ interface AdminSettingsState {
   updateSettings: (newSettings: Partial<AdminSettings>) => Promise<void>;
 }
 
-// Créer un channel pour les mises à jour en temps réel
-const settingsChannel = supabase.channel('admin_settings_changes');
+// Removed WebSocket channel for real-time updates
 
 export const useAdminSettingsStore = create<AdminSettingsState>()(
   persist(
@@ -142,14 +141,4 @@ export const useAdminSettingsStore = create<AdminSettingsState>()(
   )
 );
 
-// S'abonner aux changements en temps réel
-settingsChannel
-  .on('postgres_changes', { 
-    event: '*', 
-    schema: 'public',
-    table: 'admin_settings' 
-  }, () => {
-    // Recharger les paramètres lorsqu'un changement est détecté
-    useAdminSettingsStore.getState().loadSettings();
-  })
-  .subscribe();
+// Real-time updates removed - settings will be loaded on demand

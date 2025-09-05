@@ -393,8 +393,17 @@ processor = None
 def init_processor():
     """Initialise le processeur (appelé au démarrage)"""
     global processor
-    processor = UnifiedProcessor()
-    logger.info("Unified processor initialized")
+    if processor is None:
+        processor = UnifiedProcessor()
+        logger.info("Unified processor initialized")
+    return processor
+
+def get_processor():
+    """Get processor with lazy initialization"""
+    global processor
+    if processor is None:
+        init_processor()
+    return processor
 
 
 @app.route('/process', methods=['POST'])
@@ -402,7 +411,8 @@ def process_endpoint():
     """Endpoint unique pour tous les modes de traitement"""
     try:
         # Récupérer le mode
-        mode = request.args.get('mode', processor.config.get('default_mode', 'ai'))
+        proc = get_processor()
+        mode = request.args.get('mode', proc.config.get('default_mode', 'ai'))
         
         # Log de la requête
         logger.info(f"Processing request - Mode: {mode}")
@@ -444,7 +454,7 @@ def process_endpoint():
         
         # Traiter l'image
         try:
-            result, metadata = processor.process_image(mode, image, params)
+            result, metadata = proc.process_image(mode, image, params)
         except ValueError as e:
             # Erreur de validation (mode désactivé, image trop grande, etc.)
             logger.warning(f"Validation error: {e}")
@@ -452,7 +462,7 @@ def process_endpoint():
         except Exception as e:
             # Erreur de traitement
             logger.error(f"Processing error: {e}")
-            if processor.config.get_bool('error_details_in_response', False):
+            if proc.config.get_bool('error_details_in_response', False):
                 return jsonify({
                     'error': str(e),
                     'type': type(e).__name__,
@@ -462,7 +472,7 @@ def process_endpoint():
         
         # Préparer la réponse
         output_format = metadata['output_format']
-        quality = processor.config.get_int('output_quality', 95)
+        quality = proc.config.get_int('output_quality', 95)
         
         output = BytesIO()
         
@@ -512,40 +522,41 @@ def process_endpoint():
 def health_check():
     """Health check avec statut des modes et configuration"""
     try:
+        proc = get_processor()
         return jsonify({
             'status': 'healthy',
             'backend': 'unified',
             'version': '1.0.0',
             'modes': {
                 'ai': {
-                    'enabled': processor.config.get_bool('mode_ai_enabled'),
-                    'format': processor.config.get(f'output_format_ai', 'png')
+                    'enabled': proc.config.get_bool('mode_ai_enabled'),
+                    'format': proc.config.get(f'output_format_ai', 'png')
                 },
                 'resize': {
-                    'enabled': processor.config.get_bool('mode_resize_enabled'),
-                    'format': processor.config.get(f'output_format_resize', 'jpg')
+                    'enabled': proc.config.get_bool('mode_resize_enabled'),
+                    'format': proc.config.get(f'output_format_resize', 'jpg')
                 },
                 'both': {
-                    'enabled': processor.config.get_bool('mode_both_enabled'),
-                    'format': processor.config.get(f'output_format_both', 'png')
+                    'enabled': proc.config.get_bool('mode_both_enabled'),
+                    'format': proc.config.get(f'output_format_both', 'png')
                 },
                 'crop_head': {
-                    'enabled': processor.config.get_bool('mode_crop_head_enabled'),
-                    'format': processor.config.get(f'output_format_crop_head', 'jpg')
+                    'enabled': proc.config.get_bool('mode_crop_head_enabled'),
+                    'format': proc.config.get(f'output_format_crop_head', 'jpg')
                 },
                 'all': {
-                    'enabled': processor.config.get_bool('mode_all_enabled'),
-                    'format': processor.config.get(f'output_format_all', 'png')
+                    'enabled': proc.config.get_bool('mode_all_enabled'),
+                    'format': proc.config.get(f'output_format_all', 'png')
                 }
             },
             'config': {
-                'default_mode': processor.config.get('default_mode'),
-                'resize_tool': processor.config.get('resize_tool'),
-                'nose_crop_ratio': processor.config.get('nose_position_ratio'),
-                'bria_configured': bool(processor.config.get('bria_api_token')),
+                'default_mode': proc.config.get('default_mode'),
+                'resize_tool': proc.config.get('resize_tool'),
+                'nose_crop_ratio': proc.config.get('nose_position_ratio'),
+                'bria_configured': bool(proc.config.get('bria_api_token')),
                 'config_age_seconds': (
-                    (datetime.now() - processor.config.last_refresh).total_seconds()
-                    if processor.config.last_refresh else -1
+                    (datetime.now() - proc.config.last_refresh).total_seconds()
+                    if proc.config.last_refresh else -1
                 )
             }
         })
@@ -566,16 +577,17 @@ def reload_config():
             return jsonify({'error': 'Unauthorized'}), 401
         
         # Recharger la configuration
-        processor.config.load_settings()
+        proc = get_processor()
+        proc.config.load_settings()
         
         # Réinitialiser les détecteurs si nécessaire
-        processor.crop_head._init_detector()
+        proc.crop_head._init_detector()
         
         logger.info("Configuration reloaded by admin")
         
         return jsonify({
             'status': 'Configuration reloaded successfully',
-            'settings_count': len(processor.config.settings),
+            'settings_count': len(proc.config.settings),
             'timestamp': datetime.now().isoformat()
         })
         
@@ -596,7 +608,11 @@ def test_endpoint():
 @app.errorhandler(413)
 def request_entity_too_large(error):
     """Gestion des fichiers trop gros"""
-    max_size = processor.config.get_int('max_file_size_mb', 10) if processor else 10
+    try:
+        proc = get_processor()
+        max_size = proc.config.get_int('max_file_size_mb', 10)
+    except:
+        max_size = 10
     return jsonify({
         'error': f'File too large. Maximum size: {max_size}MB'
     }), 413

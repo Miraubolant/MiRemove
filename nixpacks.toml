@@ -1,10 +1,10 @@
 [phases.setup]
 nixPkgs = ["nodejs", "python311", "python311Packages.pip", "python311Packages.setuptools", "gcc"]
-aptPkgs = ["python3-pip"]
+aptPkgs = ["python3-pip", "python3-venv"]
 
 [phases.install]
 cmds = [
-    "cd backend && pip3 install -r requirements.txt",
+    "cd backend && pip3 install --break-system-packages -r requirements.txt",
     "npm install"
 ]
 

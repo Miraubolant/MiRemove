@@ -1,10 +1,23 @@
 [phases.setup]
-nixPkgs = ["nodejs", "python311", "python311Packages.pip", "python311Packages.setuptools", "gcc", "stdenv.cc.cc.lib"]
-aptPkgs = ["python3-pip", "python3-venv", "libglib2.0-0", "libsm6", "libxext6", "libxrender-dev", "libgomp1", "libglu1-mesa", "libgl1-mesa-glx", "libstdc++6"]
+nixPkgs = [
+    "nodejs",
+    "python311",
+    "python311Packages.pip",
+    "python311Packages.setuptools",
+    "python311Packages.numpy",
+    "python311Packages.opencv4",
+    "python311Packages.pillow",
+    "python311Packages.flask",
+    "python311Packages.flask-cors",
+    "python311Packages.requests",
+    "python311Packages.gunicorn",
+    "gcc",
+    "stdenv.cc.cc.lib"
+]
 
 [phases.install]
 cmds = [
-    "cd backend && pip3 install --break-system-packages -r requirements.txt",
+    "cd backend && pip3 install --break-system-packages supabase",
     "npm install"
 ]
 

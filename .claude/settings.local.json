@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev:*)",
+      "Bash(dir:*)",
+      "Bash(find:*)",
+      "Bash(mkdir:*)",
+      "Bash(python:*)",
+      "Bash(npm run build:*)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\src/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\src/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\src\\stores/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\src\\services/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\src\\stores/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\src\\services/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\backend/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\supabase/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\backend/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\src\\services/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\src\\pages/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\src\\components/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\src\\components/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\src\\stores/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\src/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\migrations/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\src/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\src/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\src\\stores/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\src\\components/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\src\\components/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\src/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\src/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\src\\components/**)",
+      "Read(/C:\\Users\\victo\\Desktop\\Projet Dev\\MiRemover\\src\\components/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

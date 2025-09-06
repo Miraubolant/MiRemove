@@ -17,7 +17,7 @@ import { useUsageStore } from './stores/usageStore';
 import { useAuthStore } from './stores/authStore';
 import { useAdminSettingsStore } from './stores/adminSettingsStore';
 import { supabase } from './lib/supabase';
-import { removeBackground, cancelAllProcessing } from './services/api';
+import { removeBackground, cancelAllProcessing, cleanupAllResources } from './services/api';
 import { loadImagesMetadata } from './services/imageService';
 import { Privacy } from './pages/Privacy';
 import { Terms } from './pages/Terms';
@@ -52,6 +52,20 @@ function MainAppContent() {
     document.body.classList.add('dark');
     // Charger les paramètres admin au démarrage
     loadSettings();
+
+    // Cleanup function to be called when the component unmounts or page unloads
+    const handleBeforeUnload = () => {
+      cleanupAllResources();
+    };
+
+    // Add event listeners for cleanup
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Cleanup function for React useEffect
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      cleanupAllResources();
+    };
   }, [loadSettings]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -461,8 +475,8 @@ function MainAppContent() {
     setTotalToProcess(0);
     setProcessingBatch(false);
     
-    // 4. Annuler toutes les requêtes HTTP en cours
-    cancelAllProcessing();
+    // 4. Annuler toutes les requêtes HTTP en cours et nettoyer toutes les ressources
+    cleanupAllResources();
     
     // 5. Reset du compteur si pas authentifié
     if (!user) {

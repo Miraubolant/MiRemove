@@ -1,5 +1,5 @@
 import { ImageFile } from '../types';
-import { compressImage } from './imageCompression';
+import { compressImage, cleanupImageWorker } from './imageCompression';
 
 // Constants for better maintainability  
 // Backend unifié local (développement) ou proxy (production)
@@ -119,6 +119,24 @@ async function convertToJPG(blob: Blob, originalName: string): Promise<Blob> {
     const img = new Image();
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
+    let objectUrl: string | null = null;
+
+    // Cleanup function
+    const cleanup = () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+        objectUrl = null;
+      }
+      // Clear canvas context
+      if (ctx && canvas.width > 0 && canvas.height > 0) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      // Reset canvas dimensions
+      canvas.width = 0;
+      canvas.height = 0;
+      // Clear image src
+      img.src = '';
+    };
 
     if (!ctx) {
       reject(new Error('Failed to get canvas context'));
@@ -126,27 +144,38 @@ async function convertToJPG(blob: Blob, originalName: string): Promise<Blob> {
     }
 
     img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0);
-      
-      canvas.toBlob(
-        (jpgBlob) => {
-          if (!jpgBlob) {
-            reject(new Error('Failed to convert to JPG'));
-            return;
-          }
-          resolve(jpgBlob);
-        },
-        'image/jpeg',
-        0.95
-      );
+      try {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        
+        canvas.toBlob(
+          (jpgBlob) => {
+            cleanup();
+            if (!jpgBlob) {
+              reject(new Error('Failed to convert to JPG'));
+              return;
+            }
+            resolve(jpgBlob);
+          },
+          'image/jpeg',
+          0.95
+        );
+      } catch (error) {
+        cleanup();
+        reject(error);
+      }
     };
 
-    img.onerror = () => reject(new Error('Failed to load image'));
-    img.src = URL.createObjectURL(blob);
+    img.onerror = () => {
+      cleanup();
+      reject(new Error('Failed to load image'));
+    };
+
+    objectUrl = URL.createObjectURL(blob);
+    img.src = objectUrl;
   });
 }
 
@@ -230,6 +259,9 @@ export function cancelAllProcessing(): void {
   
   // 4. Reset immédiat de la queue (pas de délai)
   requestQueue.reset();
+  
+  // 5. Clean up all resources to prevent memory leaks
+  cleanupAllResources();
 }
 
 // Function to remove background (mode AI uniquement)
@@ -289,6 +321,9 @@ async function processImage(
   return response.blob();
 }
 
+// Store created Object URLs for cleanup
+const createdObjectUrls = new Set<string>();
+
 export async function removeBackground(
   file: File, 
   model: string = 'bria',
@@ -330,6 +365,7 @@ export async function removeBackground(
 
     // Create object URL from the final blob
     const resultUrl = URL.createObjectURL(resultBlob);
+    createdObjectUrls.add(resultUrl);
     success = true;
 
     // Track processing time and dispatch event
@@ -363,4 +399,39 @@ export async function removeBackground(
 
     throw new Error(error.message || 'Failed to process image');
   }
+}
+
+// Export function to clean up a specific Object URL
+export function cleanupObjectUrl(url: string): void {
+  if (createdObjectUrls.has(url)) {
+    URL.revokeObjectURL(url);
+    createdObjectUrls.delete(url);
+  }
+}
+
+// Export function to clean up all Object URLs
+export function cleanupAllObjectUrls(): void {
+  createdObjectUrls.forEach(url => {
+    URL.revokeObjectURL(url);
+  });
+  createdObjectUrls.clear();
+}
+
+// Global cleanup function for all memory resources
+export function cleanupAllResources(): void {
+  // Clean up Object URLs
+  cleanupAllObjectUrls();
+  
+  // Clean up image processing worker
+  cleanupImageWorker();
+  
+  // Abort and reset global abort controller
+  if (globalAbortController) {
+    globalAbortController.abort();
+    globalAbortController = new AbortController();
+  }
+  
+  // Reset request queue
+  requestQueue.cancelAll();
+  requestQueue.reset();
 }

@@ -23,8 +23,23 @@ export function ProgressBar({ total, completed, maxFreeImages }: ProgressBarProp
     }
   }, [total, completed]);
 
+  // Calcul des valeurs dérivées déplacé dans des useMemo pour éviter des recalculs inutiles
+  const { validCompleted, progress, isComplete, remaining } = useMemo(() => {
+    const validCompleted = Math.min(completed, total);
+    const progress = total === 0 ? 0 : Math.min((validCompleted / total) * 100, 100);
+    const isComplete = validCompleted === total && total > 0;
+    const remaining = total - validCompleted;
+    
+    return { validCompleted, progress, isComplete, remaining };
+  }, [completed, total]);
+
   // Optimisation: Mise à jour du temps écoulé avec requestAnimationFrame pour de meilleures performances
   useEffect(() => {
+    // Arrêter le compteur si le traitement est terminé
+    if (isComplete) {
+      return;
+    }
+    
     let animationFrameId: number;
     let lastUpdateTime = Date.now();
     
@@ -43,17 +58,17 @@ export function ProgressBar({ total, completed, maxFreeImages }: ProgressBarProp
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [startTime]);
-
-  // Calcul des valeurs dérivées déplacé dans des useMemo pour éviter des recalculs inutiles
-  const { validCompleted, progress, isComplete, remaining } = useMemo(() => {
-    const validCompleted = Math.min(completed, total);
-    const progress = total === 0 ? 0 : Math.min((validCompleted / total) * 100, 100);
-    const isComplete = validCompleted === total && total > 0;
-    const remaining = total - validCompleted;
-    
-    return { validCompleted, progress, isComplete, remaining };
-  }, [completed, total]);
+  }, [startTime, isComplete]);
+  
+  // Capturer le temps final quand le traitement est terminé
+  const [finalTime, setFinalTime] = useState<number | null>(null);
+  useEffect(() => {
+    if (isComplete && !finalTime) {
+      setFinalTime(elapsedTime);
+    } else if (!isComplete && finalTime) {
+      setFinalTime(null);
+    }
+  }, [isComplete, elapsedTime, finalTime]);
 
   // Optimisation: calcul du temps restant estimé avec mise en cache
   const estimatedTimeRemaining = useMemo(() => {
@@ -124,7 +139,7 @@ export function ProgressBar({ total, completed, maxFreeImages }: ProgressBarProp
         <div className="flex items-center gap-2 text-sm text-gray-400">
           <Clock className="w-4 h-4" />
           <span>
-            {isComplete ? 'Terminé' : `Reste ~${formattedTimeRemaining}`}
+            {isComplete ? `Terminé en ${formatTime(finalTime || elapsedTime)}` : `Reste ~${formattedTimeRemaining}`}
           </span>
         </div>
       </div>
